@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Event</h2>
+<form method="POST">
+    Title: <input type="text" name="Title" required><br>
+    Date: <input type="date" name="Date"><br>
+    Location: <input type="text" name="Location"><br>
+    Organisation:
+    <select name="OrganisationID" required>
+        {% for o in orgs %}
+            <option value="{{ o.OrganisationID }}">{{ o.Name }}</option>
+        {% endfor %}
+    </select><br>
+    <button type="submit">Add Event</button>
+</form>
+{% endblock %}

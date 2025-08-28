@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Volunteer: {{ volunteer.FirstName }} {{ volunteer.LastName }}</h2>
+
+<form method="POST">
+    <label for="FirstName">First Name:</label>
+    <input type="text" name="FirstName" id="FirstName" value="{{ volunteer.FirstName }}" required><br><br>
+
+    <label for="LastName">Last Name:</label>
+    <input type="text" name="LastName" id="LastName" value="{{ volunteer.LastName }}" required><br><br>
+
+    <label for="Email">Email:</label>
+    <input type="email" name="Email" id="Email" value="{{ volunteer.Email }}" required><br><br>
+
+    <label for="Phone">Phone:</label>
+    <input type="text" name="Phone" id="Phone" value="{{ volunteer.Phone }}"><br><br>
+
+    <label for="Address">Address:</label>
+    <input type="text" name="Address" id="Address" value="{{ volunteer.Address }}"><br><br>
+
+    <label for="DateOfBirth">Date of Birth:</label>
+    <input type="date" name="DateOfBirth" id="DateOfBirth" value="{{ volunteer.DateOfBirth }}"><br><br>
+
+    <label for="Availability">Availability:</label>
+    <input type="text" name="Availability" id="Availability" value="{{ volunteer.Availability }}"><br><br>
+
+    <button type="submit">Update Volunteer</button>
+</form>
+
+<a href="{{ url_for('list_volunteers') }}">⬅️ Back to Volunteers</a>
+{% endblock %}

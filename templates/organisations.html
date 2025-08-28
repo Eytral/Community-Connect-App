@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Organisations</h2>
+<table>
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th></tr>
+    {% for o in orgs %}
+    <tr>
+        <td>{{ o.OrganisationID }}</td>
+        <td>{{ o.Name }}</td>
+        <td>{{ o.Email }}</td>
+        <td>{{ o.Phone }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

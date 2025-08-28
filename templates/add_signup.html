@@ -1,0 +1,20 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Signup</h2>
+<form method="POST">
+    Volunteer:
+    <select name="VolunteerID" required>
+        {% for v in volunteers %}
+            <option value="{{ v.VolunteerID }}">{{ v.FirstName }} {{ v.LastName }}</option>
+        {% endfor %}
+    </select><br>
+    Event:
+    <select name="EventID" required>
+        {% for e in events %}
+            <option value="{{ e.EventID }}">{{ e.Title }}</option>
+        {% endfor %}
+    </select><br>
+    <button type="submit">Add Signup</button>
+</form>
+{% endblock %}

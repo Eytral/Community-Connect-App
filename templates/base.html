@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Connect</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a, button { margin: 2px; }
+        form { display: inline; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Home</a> |
+        <a href="{{ url_for('list_volunteers') }}">Volunteers</a> |
+        <a href="{{ url_for('list_orgs') }}">Organisations</a> |
+        <a href="{{ url_for('list_events') }}">Events</a> |
+        <a href="{{ url_for('list_signups') }}">Signups</a>
+    </nav>
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>

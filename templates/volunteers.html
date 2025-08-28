@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Volunteers</h2>
+<a href="{{ url_for('add_volunteer') }}">➕ Add Volunteer</a>
+<table>
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr>
+    {% for v in volunteers %}
+    <tr>
+        <td>{{ v.VolunteerID }}</td>
+        <td>{{ v.FirstName }} {{ v.LastName }}</td>
+        <td>{{ v.Email }}</td>
+        <td>{{ v.Phone }}</td>
+        <td>
+            <a href="{{ url_for('update_volunteer', id=v.VolunteerID) }}">✏️ Update</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

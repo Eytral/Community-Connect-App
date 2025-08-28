@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Events</h2>
+<a href="{{ url_for('add_event') }}">➕ Add Event</a>
+<table>
+    <tr><th>ID</th><th>Title</th><th>Date</th><th>Location</th><th>Organisation</th><th>Actions</th></tr>
+    {% for e in events %}
+    <tr>
+        <td>{{ e.EventID }}</td>
+        <td>{{ e.Title }}</td>
+        <td>{{ e.Date }}</td>
+        <td>{{ e.Location }}</td>
+        <td>{{ e.OrgName }}</td>
+        <td>
+            <form action="{{ url_for('delete_event', id=e.EventID) }}" method="POST" style="display:inline;">
+                <button type="submit" onclick="return confirm('Delete this event?');">🗑️ Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
