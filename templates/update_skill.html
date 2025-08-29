@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Skill</h2>
+<form method="POST">
+    Name*: <input type="text" name="Name" value="{{ skill.Name }}" required><br>
+    Description: <textarea name="Description">{{ skill.Description }}</textarea><br>
+    <button type="submit">Update Skill</button>
+</form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Roles</h2>
+<a href="{{ url_for('add_role') }}">Add Role</a>
+<table border="1">
+    <tr>
+        <th>ID</th><th>Name</th><th>Description</th><th>Actions</th>
+    </tr>
+    {% for r in roles %}
+    <tr>
+        <td>{{ r.RoleID }}</td>
+        <td>{{ r.Name }}</td>
+        <td>{{ r.Description }}</td>
+        <td>
+            <a href="{{ url_for('update_role', id=r.RoleID) }}">Edit</a>
+            <form method="POST" action="{{ url_for('delete_role', id=r.RoleID) }}" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

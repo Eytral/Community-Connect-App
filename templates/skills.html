@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Skills</h2>
+<a href="{{ url_for('add_skill') }}">Add Skill</a>
+<table border="1">
+    <tr>
+        <th>ID</th><th>Name</th><th>Description</th><th>Actions</th>
+    </tr>
+    {% for s in skills %}
+    <tr>
+        <td>{{ s.SkillID }}</td>
+        <td>{{ s.Name }}</td>
+        <td>{{ s.Description }}</td>
+        <td>
+            <a href="{{ url_for('update_skill', id=s.SkillID) }}">Edit</a>
+            <form method="POST" action="{{ url_for('delete_skill', id=s.SkillID) }}" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

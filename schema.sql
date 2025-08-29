@@ -1,89 +1,96 @@
--- Drop old tables (for development resets)
-DROP TABLE IF EXISTS VolunteerSkills;
-DROP TABLE IF EXISTS VolunteerEvents;
-DROP TABLE IF EXISTS Skills;
+-- Drop tables if exist (reverse order of dependencies)
 DROP TABLE IF EXISTS Signups;
+DROP TABLE IF EXISTS EventSkills;
+DROP TABLE IF EXISTS VolunteerSkills;
 DROP TABLE IF EXISTS Events;
 DROP TABLE IF EXISTS Organisations;
 DROP TABLE IF EXISTS Volunteers;
+DROP TABLE IF EXISTS Roles;
+DROP TABLE IF EXISTS Skills;
 
--- -------------------------
--- Volunteers
--- -------------------------
+-- Organisations Table
+CREATE TABLE Organisations (
+    OrganisationID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Description TEXT,
+    ContactPerson TEXT,
+    Email TEXT UNIQUE,
+    Password TEXT,
+    Phone TEXT,
+    Address TEXT,
+    Website TEXT,
+    Logo TEXT
+);
+
+-- Volunteers Table
 CREATE TABLE Volunteers (
     VolunteerID INTEGER PRIMARY KEY AUTOINCREMENT,
     FirstName TEXT NOT NULL,
     LastName TEXT NOT NULL,
-    Email TEXT UNIQUE NOT NULL,
+    Email TEXT UNIQUE,
+    Password TEXT,
     Phone TEXT,
     Address TEXT,
-    DateOfBirth TEXT,
+    DateOfBirth DATE,
     Availability TEXT,
     ProfilePhoto TEXT,
-    EmergencyContact TEXT
+    EmergencyContact INTEGER
 );
 
--- -------------------------
--- Skills
--- -------------------------
+-- Roles Table
+CREATE TABLE Roles (
+    RoleID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Description TEXT
+);
+
+-- Skills Table
 CREATE TABLE Skills (
     SkillID INTEGER PRIMARY KEY AUTOINCREMENT,
-    SkillName TEXT NOT NULL,
-    SkillDescription TEXT
-);
-
--- -------------------------
--- VolunteerSkills (M:N Volunteers <-> Skills)
--- -------------------------
-CREATE TABLE VolunteerSkills (
-    VolunteerID INTEGER NOT NULL,
-    SkillID INTEGER NOT NULL,
-    PRIMARY KEY (VolunteerID, SkillID),
-    FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID),
-    FOREIGN KEY (SkillID) REFERENCES Skills(SkillID)
-);
-
--- -------------------------
--- Organisations
--- -------------------------
-CREATE TABLE Organisations (
-    OrganisationID INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT NOT NULL,
-    Address TEXT,
-    Phone TEXT,
-    Email TEXT
+    Description TEXT
 );
 
--- -------------------------
--- Events
--- -------------------------
+-- Events Table
 CREATE TABLE Events (
     EventID INTEGER PRIMARY KEY AUTOINCREMENT,
-    Title TEXT NOT NULL,
-    Date TEXT,
+    OrganisationID INTEGER,
+    Name TEXT NOT NULL,
+    Description TEXT,
+    Date DATE,
+    StartTime TIME,
+    EndTime TIME,
     Location TEXT,
-    OrganisationID INTEGER NOT NULL,
+    Status TEXT,
     FOREIGN KEY (OrganisationID) REFERENCES Organisations(OrganisationID)
 );
 
--- -------------------------
--- VolunteerEvents (M:N Volunteers <-> Events)
--- -------------------------
-CREATE TABLE VolunteerEvents (
-    VolunteerID INTEGER NOT NULL,
-    EventID INTEGER NOT NULL,
-    PRIMARY KEY (VolunteerID, EventID),
-    FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID),
-    FOREIGN KEY (EventID) REFERENCES Events(EventID)
+-- VolunteerSkills (Many-to-Many Volunteers <> Skills)
+CREATE TABLE VolunteerSkills (
+    VolunteerID INTEGER,
+    SkillID INTEGER,
+    PRIMARY KEY (VolunteerID, SkillID),
+    FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
+    FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
 );
 
--- -------------------------
--- Signups (alternative to VolunteerEvents, matches your Flask app)
--- -------------------------
+-- EventSkills (Many-to-Many Events <> Skills)
+CREATE TABLE EventSkills (
+    EventID INTEGER,
+    SkillID INTEGER,
+    PRIMARY KEY (EventID, SkillID),
+    FOREIGN KEY (EventID) REFERENCES Events(EventID) ON DELETE CASCADE,
+    FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
+);
+
+-- Signups Table (Many-to-Many Volunteers <> Events with Roles)
 CREATE TABLE Signups (
     SignupID INTEGER PRIMARY KEY AUTOINCREMENT,
-    VolunteerID INTEGER NOT NULL,
-    EventID INTEGER NOT NULL,
-    FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID),
-    FOREIGN KEY (EventID) REFERENCES Events(EventID)
+    EventID INTEGER,
+    VolunteerID INTEGER,
+    RoleID INTEGER,
+    Status TEXT,
+    FOREIGN KEY (EventID) REFERENCES Events(EventID) ON DELETE CASCADE,
+    FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
+    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID) ON DELETE CASCADE
 );

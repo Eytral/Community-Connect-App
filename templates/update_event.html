@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Event</h2>
+<form method="POST">
+    Name*: <input type="text" name="Name" value="{{ event.Name }}" required><br>
+    Description: <textarea name="Description">{{ event.Description }}</textarea><br>
+    Date: <input type="date" name="Date" value="{{ event.Date }}"><br>
+    Start Time: <input type="time" name="StartTime" value="{{ event.StartTime }}"><br>
+    End Time: <input type="time" name="EndTime" value="{{ event.EndTime }}"><br>
+    Location: <input type="text" name="Location" value="{{ event.Location }}"><br>
+    Status: <input type="text" name="Status" value="{{ event.Status }}"><br>
+    Organisation*: 
+    <select name="OrganisationID" required>
+        {% for o in orgs %}
+            <option value="{{ o.OrganisationID }}" {% if o.OrganisationID == event.OrganisationID %}selected{% endif %}>{{ o.Name }}</option>
+        {% endfor %}
+    </select><br>
+    <button type="submit">Update Event</button>
+</form>
+{% endblock %}

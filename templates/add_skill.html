@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Skill</h2>
+<form method="POST">
+    Name*: <input type="text" name="Name" required><br>
+    Description: <textarea name="Description"></textarea><br>
+    <button type="submit">Add Skill</button>
+</form>
+{% endblock %}

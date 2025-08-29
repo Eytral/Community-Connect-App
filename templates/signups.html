@@ -1,17 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Signups</h2>
-<a href="{{ url_for('add_signup') }}">➕ Add Signup</a>
-<table>
-    <tr><th>ID</th><th>Volunteer</th><th>Event</th><th>Actions</th></tr>
+<a href="{{ url_for('add_signup') }}">Add Signup</a>
+<table border="1">
+    <tr>
+        <th>ID</th><th>Volunteer</th><th>Event</th><th>Role</th><th>Status</th><th>Actions</th>
+    </tr>
     {% for s in signups %}
     <tr>
         <td>{{ s.SignupID }}</td>
         <td>{{ s.VolunteerName }}</td>
-        <td>{{ s.EventTitle }}</td>
+        <td>{{ s.EventName }}</td>
+        <td>{{ s.RoleName }}</td>
+        <td>{{ s.Status }}</td>
         <td>
-            <form action="{{ url_for('delete_signup', id=s.SignupID) }}" method="POST" style="display:inline;">
-                <button type="submit" onclick="return confirm('Delete this signup?');">🗑️ Delete</button>
+            <a href="{{ url_for('update_signup', id=s.SignupID) }}">Edit</a>
+            <form method="POST" action="{{ url_for('delete_signup', id=s.SignupID) }}" style="display:inline;">
+                <button type="submit">Delete</button>
             </form>
         </td>
     </tr>

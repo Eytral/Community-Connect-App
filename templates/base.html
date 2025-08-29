@@ -3,13 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <title>Community Connect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        a, button { margin: 2px; }
-        form { display: inline; }
+        /* Flash messages */
+        #flashes {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            z-index: 1000;
+        }
+
+        #flashes li {
+            margin-bottom: 10px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            opacity: 0.95;
+            min-width: 220px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: fadein 0.5s, fadeout 0.5s 4.5s;
+            position: relative;
+        }
+
+        /* Flash categories */
+        #flashes li.error { background-color: #e74c3c; }
+        #flashes li.success { background-color: #2ecc71; }
+        #flashes li.info { background-color: #3498db; }
+        #flashes li.warning { background-color: #f39c12; }
+
+        /* Close button */
+        #flashes li .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes fadein {
+            from {opacity: 0; transform: translateY(-10px);}
+            to {opacity: 0.95; transform: translateY(0);}
+        }
+
+        @keyframes fadeout {
+            from {opacity: 0.95;}
+            to {opacity: 0; transform: translateY(-10px);}
+        }
     </style>
 </head>
 <body>
@@ -18,9 +62,41 @@
         <a href="{{ url_for('list_volunteers') }}">Volunteers</a> |
         <a href="{{ url_for('list_orgs') }}">Organisations</a> |
         <a href="{{ url_for('list_events') }}">Events</a> |
-        <a href="{{ url_for('list_signups') }}">Signups</a>
+        <a href="{{ url_for('list_roles') }}">Roles</a> |
+        <a href="{{ url_for('list_skills') }}">Skills</a> |
+        <a href="{{ url_for('list_signups') }}">Signups</a> |
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
     </nav>
-    <hr>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul id="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">
+                        {{ message }}
+                        <span class="close-btn" onclick="this.parentElement.remove();">&times;</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
+
+    <script>
+        // Automatically remove flashes after 5 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            const flashes = document.querySelectorAll('#flashes li');
+            flashes.forEach(flash => {
+                setTimeout(() => {
+                    flash.remove();
+                }, 5000);
+            });
+        });
+    </script>
 </body>
 </html>

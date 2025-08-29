@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Organisations</h2>
-<table>
-    <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th></tr>
+<a href="{{ url_for('add_org') }}">Add Organisation</a>
+<table border="1">
+    <tr>
+        <th>ID</th><th>Name</th><th>Description</th><th>Contact Person</th><th>Email</th><th>Phone</th><th>Address</th><th>Website</th><th>Logo</th><th>Actions</th>
+    </tr>
     {% for o in orgs %}
     <tr>
         <td>{{ o.OrganisationID }}</td>
         <td>{{ o.Name }}</td>
+        <td>{{ o.Description }}</td>
+        <td>{{ o.ContactPerson }}</td>
         <td>{{ o.Email }}</td>
         <td>{{ o.Phone }}</td>
+        <td>{{ o.Address }}</td>
+        <td>{{ o.Website }}</td>
+        <td>{% if o.Logo %}<img src="{{ url_for('static', filename='uploads/' ~ o.Logo) }}" width="50">{% endif %}</td>
+        <td>
+            <a href="{{ url_for('update_org', id=o.OrganisationID) }}">Edit</a>
+            <form method="POST" action="{{ url_for('delete_org', id=o.OrganisationID) }}" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
     </tr>
     {% endfor %}
 </table>

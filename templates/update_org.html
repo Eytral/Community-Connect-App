@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Organisation</h2>
+<form method="POST" enctype="multipart/form-data">
+    Name*: <input type="text" name="Name" value="{{ org.Name }}" required><br>
+    Description: <textarea name="Description">{{ org.Description }}</textarea><br>
+    Contact Person: <input type="text" name="ContactPerson" value="{{ org.ContactPerson }}"><br>
+    Email: <input type="email" name="Email" value="{{ org.Email }}"><br>
+    Password: <input type="password" name="Password" placeholder="Leave blank to keep"><br>
+    Phone: <input type="text" name="Phone" value="{{ org.Phone }}"><br>
+    Address: <input type="text" name="Address" value="{{ org.Address }}"><br>
+    Website: <input type="url" name="Website" value="{{ org.Website }}"><br>
+    Logo: <input type="file" name="Logo"><br>
+    <button type="submit">Update Organisation</button>
+</form>
+{% endblock %}

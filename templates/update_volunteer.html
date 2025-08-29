@@ -1,31 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Edit Volunteer: {{ volunteer.FirstName }} {{ volunteer.LastName }}</h2>
-
-<form method="POST">
-    <label for="FirstName">First Name:</label>
-    <input type="text" name="FirstName" id="FirstName" value="{{ volunteer.FirstName }}" required><br><br>
-
-    <label for="LastName">Last Name:</label>
-    <input type="text" name="LastName" id="LastName" value="{{ volunteer.LastName }}" required><br><br>
-
-    <label for="Email">Email:</label>
-    <input type="email" name="Email" id="Email" value="{{ volunteer.Email }}" required><br><br>
-
-    <label for="Phone">Phone:</label>
-    <input type="text" name="Phone" id="Phone" value="{{ volunteer.Phone }}"><br><br>
-
-    <label for="Address">Address:</label>
-    <input type="text" name="Address" id="Address" value="{{ volunteer.Address }}"><br><br>
-
-    <label for="DateOfBirth">Date of Birth:</label>
-    <input type="date" name="DateOfBirth" id="DateOfBirth" value="{{ volunteer.DateOfBirth }}"><br><br>
-
-    <label for="Availability">Availability:</label>
-    <input type="text" name="Availability" id="Availability" value="{{ volunteer.Availability }}"><br><br>
-
+<h2>Edit Volunteer</h2>
+<form method="POST" enctype="multipart/form-data">
+    First Name*: <input type="text" name="FirstName" value="{{ volunteer.FirstName }}" required><br>
+    Last Name*: <input type="text" name="LastName" value="{{ volunteer.LastName }}" required><br>
+    Email*: <input type="email" name="Email" value="{{ volunteer.Email }}" required><br>
+    Phone: <input type="text" name="Phone" value="{{ volunteer.Phone }}"><br>
+    Address: <input type="text" name="Address" value="{{ volunteer.Address }}"><br>
+    Date of Birth: <input type="date" name="DateOfBirth" value="{{ volunteer.DateOfBirth }}"><br>
+    Availability: <input type="text" name="Availability" value="{{ volunteer.Availability }}"><br>
+    Emergency Contact: <input type="text" name="EmergencyContact" value="{{ volunteer.EmergencyContact }}"><br>
+    Profile Photo: <input type="file" name="ProfilePhoto"><br>
     <button type="submit">Update Volunteer</button>
 </form>
-
-<a href="{{ url_for('list_volunteers') }}">⬅️ Back to Volunteers</a>
 {% endblock %}
