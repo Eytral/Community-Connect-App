@@ -32,9 +32,9 @@ CREATE TABLE Volunteers (
     Phone TEXT,
     Address TEXT,
     DateOfBirth DATE,
-    Availability TEXT,
+    Availability BOOLEAN,
     ProfilePhoto TEXT,
-    EmergencyContact INTEGER
+    EmergencyContact TEXT
 );
 
 -- Roles Table
