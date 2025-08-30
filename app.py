@@ -22,19 +22,6 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def ensure_min_schema():
-    db = get_db()
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS VolunteerSkills (
-            VolunteerID INTEGER NOT NULL,
-            SkillID INTEGER NOT NULL,
-            PRIMARY KEY (VolunteerID, SkillID),
-            FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
-            FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
-        );
-    """)
-    db.commit()
-
 def init_db():
     first_time = not os.path.exists(DATABASE)
     with app.app_context():
@@ -47,7 +34,6 @@ def init_db():
                 with open("seed.sql", "r") as f:
                     db.executescript(f.read())
             db.commit()
-        ensure_min_schema()
 
 # ---------- Auth & Role Decorators ----------
 def login_required(f):
@@ -179,8 +165,6 @@ def register_volunteer_page():
 def register_organisation_page():
     """Renders the organisation registration form and handles its submission."""
     if request.method == "POST":
-        # This is where you would place the organisation registration logic
-        # that was previously in your main register() function.
         db = get_db()
         email = request.form["email"].strip()
         
@@ -191,7 +175,6 @@ def register_organisation_page():
             flash("An account with that email already exists.", "error")
             return redirect(url_for("register_organisation_page"))
 
-        # Your database insert logic for organisations
         db.execute(
             """INSERT INTO Organisations
                (Name, ContactPerson, Email, Password, Phone, Address, Website, Description, Logo)
@@ -559,8 +542,6 @@ def signup_for_event(event_id):
         db.commit()
         flash("Successfully signed up for the event! Your status is 'Pending'.", "success")
     return redirect(url_for("list_events"))
-
-# In your app.py file, add this new route:
 
 @app.route("/events/<int:event_id>")
 @login_required
