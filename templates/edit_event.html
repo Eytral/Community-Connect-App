@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Edit Event: {{ event.Name }}</h2>
+<form method="POST">
+    <div class="form-group">
+        <label for="name">Event Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ event.Name }}" required>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3">{{ event.Description }}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" class="form-control" id="date" name="date" value="{{ event.Date }}" required>
+    </div>
+    <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" class="form-control" id="location" name="location" value="{{ event.Location }}">
+    </div>
+    <div class="form-group">
+        <label for="start_time">Start Time</label>
+        <input type="time" class="form-control" id="start_time" name="start_time" value="{{ event.StartTime }}">
+    </div>
+    <div class="form-group">
+        <label for="end_time">End Time</label>
+        <input type="time" class="form-control" id="end_time" name="end_time" value="{{ event.EndTime }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Update Event</button>
+</form>
+{% endblock %}

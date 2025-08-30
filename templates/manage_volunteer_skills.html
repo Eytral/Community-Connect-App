@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Manage My Skills</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>My Current Skills</h5>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% if current_skills %}
+            {% for skill in current_skills %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ skill.Name }}</strong>
+                        <br><small class="text-muted">{{ skill.Description }}</small>
+                    </div>
+                    <form action="{{ url_for('delete_volunteer_skill', skill_id=skill.SkillID) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </li>
+            {% endfor %}
+        {% else %}
+            <li class="list-group-item text-muted">You have not added any skills yet.</li>
+        {% endif %}
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Add an Existing Skill</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('manage_volunteer_skills') }}" method="POST">
+            <div class="form-group">
+                <label for="skill_id">Select a Skill</label>
+                <select class="form-control" id="skill_id" name="skill_id" required>
+                    <option value="">-- Choose a skill --</option>
+                    {% for skill in all_skills %}
+                        <option value="{{ skill.SkillID }}">{{ skill.Name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Selected Skill</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5>Or Add a New Skill</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('add_new_skill') }}" method="POST">
+            <div class="form-group">
+                <label for="new_skill_name">New Skill Name</label>
+                <input type="text" class="form-control" id="new_skill_name" name="new_skill_name" required>
+            </div>
+            <div class="form-group">
+                <label for="new_skill_description">Description (optional)</label>
+                <textarea class="form-control" id="new_skill_description" name="new_skill_description" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add and Assign New Skill</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

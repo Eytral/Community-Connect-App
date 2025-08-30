@@ -1,102 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Community Connect</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        /* Flash messages */
-        #flashes {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            z-index: 1000;
-        }
-
-        #flashes li {
-            margin-bottom: 10px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: #fff;
-            opacity: 0.95;
-            min-width: 220px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: fadein 0.5s, fadeout 0.5s 4.5s;
-            position: relative;
-        }
-
-        /* Flash categories */
-        #flashes li.error { background-color: #e74c3c; }
-        #flashes li.success { background-color: #2ecc71; }
-        #flashes li.info { background-color: #3498db; }
-        #flashes li.warning { background-color: #f39c12; }
-
-        /* Close button */
-        #flashes li .close-btn {
-            position: absolute;
-            top: 5px;
-            right: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* Animations */
-        @keyframes fadein {
-            from {opacity: 0; transform: translateY(-10px);}
-            to {opacity: 0.95; transform: translateY(0);}
-        }
-
-        @keyframes fadeout {
-            from {opacity: 0.95;}
-            to {opacity: 0; transform: translateY(-10px);}
-        }
-    </style>
+    <title>Community Connect</title>
 </head>
 <body>
-    <nav>
-        <a href="{{ url_for('index') }}">Home</a> |
-        <a href="{{ url_for('list_volunteers') }}">Volunteers</a> |
-        <a href="{{ url_for('list_orgs') }}">Organisations</a> |
-        <a href="{{ url_for('list_events') }}">Events</a> |
-        <a href="{{ url_for('list_roles') }}">Roles</a> |
-        <a href="{{ url_for('list_skills') }}">Skills</a> |
-        <a href="{{ url_for('list_signups') }}">Signups</a> |
-        {% if session.get('user_id') %}
-            <a href="{{ url_for('logout') }}">Logout</a>
-        {% else %}
-            <a href="{{ url_for('login') }}">Login</a>
-        {% endif %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Community Connect</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                {% if session.get('account_type') == 'volunteer' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('volunteer_dashboard') }}">My Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_events') }}">Events</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_orgs') }}">Organisations</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_volunteers') }}">Volunteers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('manage_volunteer_skills') }}">My Skills</a>
+                </li>
+                {% elif session.get('account_type') == 'organisation' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('organisation_dashboard') }}">My Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_events') }}">Events</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_volunteers') }}">Volunteers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_orgs') }}">Organisations</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('add_event') }}">Add Event</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                {% if session.get('user_id') %}
+                <span class="navbar-text mr-3">
+                    Logged in as {{ session['name'] }}
+                </span>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
     </nav>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <ul id="flashes">
-                {% for category, message in messages %}
-                    <li class="{{ category }}">
-                        {{ message }}
-                        <span class="close-btn" onclick="this.parentElement.remove();">&times;</span>
-                    </li>
-                {% endfor %}
-            </ul>
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
         {% endif %}
-    {% endwith %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
 
-    {% block content %}{% endblock %}
-
-    <script>
-        // Automatically remove flashes after 5 seconds
-        document.addEventListener('DOMContentLoaded', () => {
-            const flashes = document.querySelectorAll('#flashes li');
-            flashes.forEach(flash => {
-                setTimeout(() => {
-                    flash.remove();
-                }, 5000);
-            });
-        });
-    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

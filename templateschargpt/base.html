@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Connect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if session.get("account_type") == "volunteer" %}
+            | <a href="{{ url_for('list_events') }}">Events</a>
+        {% elif session.get("account_type") == "organisation" %}
+            | <a href="{{ url_for('list_events') }}">Manage Events</a>
+        {% endif %}
+        {% if session.get("account_type") %}
+            | <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            | <a href="{{ url_for('login') }}">Login</a>
+            | <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul id="messages">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</body>
+</html>

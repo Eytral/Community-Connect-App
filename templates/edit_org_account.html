@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Edit My Organisation Profile</h2>
+<form method="POST">
+    <div class="form-group">
+        <label for="name">Organisation Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ org.Name }}" required>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="5">{{ org.Description }}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ org.Email }}" disabled>
+        <small class="form-text text-muted">Email cannot be changed.</small>
+    </div>
+    <div class="form-group">
+        <label for="phone">Phone</label>
+        <input type="tel" class="form-control" id="phone" name="phone" value="{{ org.Phone }}">
+    </div>
+    <div class="form-group">
+        <label for="website">Website</label>
+        <input type="text" class="form-control" id="website" name="website" value="{{ org.Website }}">
+    </div>
+    <div class="form-group">
+        <label for="contact_person">Contact Person</label>
+        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ org.ContactPerson }}">
+    </div>
+    <div class="form-group">
+        <label for="logo">Logo URL</label>
+        <input type="text" class="form-control" id="logo" name="logo" value="{{ org.Logo }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Update Profile</button>
+</form>
+{% endblock %}

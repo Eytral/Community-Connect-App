@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Login</h2>
+<form method="POST">
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" name="email" required><br><br>
+
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password" required><br><br>
+
+    <label for="role">Login as:</label><br>
+    <select name="role" id="role" required>
+        <option value="volunteer">Volunteer</option>
+        <option value="organisation">Organisation</option>
+    </select><br><br>
+
+    <button type="submit">Login</button>
+</form>
+{% endblock %}

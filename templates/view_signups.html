@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Signups for Event: {{ event.Name }}</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Event Details</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Date:</strong> {{ event.Date }}</p>
+        <p><strong>Location:</strong> {{ event.Location }}</p>
+    </div>
+</div>
+
+<h3 class="mt-4">Volunteer Signups</h3>
+{% if signups %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Volunteer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for signup in signups %}
+        <tr>
+            <td><a href="{{ url_for('view_volunteer_profile', volunteer_id=signup.VolunteerID) }}">{{ signup.FirstName }} {{ signup.LastName }}</a></td>
+            <td>{{ signup.Email }}</td>
+            <td>{{ signup.Phone or 'N/A' }}</td>
+            <td><span class="badge badge-{% if signup.Status == 'Accepted' %}success{% elif signup.Status == 'Rejected' %}danger{% else %}warning{% endif %}">{{ signup.Status }}</span></td>
+            <td>
+                <form action="{{ url_for('update_signup_status', signup_id=signup.SignupID) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="status" value="Accepted">
+                    <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                </form>
+                <form action="{{ url_for('update_signup_status', signup_id=signup.SignupID) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="status" value="Rejected">
+                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No volunteers have signed up for this event yet.</p>
+{% endif %}
+{% endblock %}

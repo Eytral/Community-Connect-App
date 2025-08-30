@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4 text-center">Join Our Community</h2>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">I am a Volunteer</h5>
+                <p class="card-text text-muted">Join local events, connect with organisations, and make a difference.</p>
+                <a href="{{ url_for('register_volunteer_page') }}" class="btn btn-primary mt-2">Register as a Volunteer</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">I am an Organisation</h5>
+                <p class="card-text text-muted">Find skilled volunteers and post your events and opportunities.</p>
+                <a href="{{ url_for('register_organisation_page') }}" class="btn btn-success mt-2">Register as an Organisation</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

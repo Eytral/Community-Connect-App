@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">All Organisations</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Organisation</th>
+            <th>Description</th>
+            <th>Email</th>
+            <th>Website</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for org in orgs %}
+        <tr>
+            <td>{{ org.Name }}</td>
+            <td>{{ org.Description or 'N/A' }}</td>
+            <td>{{ org.Email }}</td>
+            <td><a href="{{ org.Website }}" target="_blank">{{ org.Website or 'N/A' }}</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

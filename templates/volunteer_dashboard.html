@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Volunteer Dashboard</h2>
+<p>Welcome, **{{ session['name'] }}**! Here are your upcoming event signups.</p>
+
+<div class="card my-4">
+    <div class="card-header">
+        <h5 class="mb-0">My Account</h5>
+    </div>
+    <div class="card-body">
+        <a href="{{ url_for('edit_volunteer_account') }}" class="btn btn-info">Edit My Account</a>
+        <a href="{{ url_for('manage_volunteer_skills') }}" class="btn btn-info">Manage My Skills</a>
+    </div>
+</div>
+
+<h3 class="mt-4">My Event Signups</h3>
+{% if signups %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Organisation</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for signup in signups %}
+        <tr>
+            <td><a href="{{ url_for('list_events') }}">{{ signup.EventName }}</a></td>
+            <td>{{ signup.OrgName }}</td>
+            <td>{{ signup.Date }}</td>
+            <td>{{ signup.Location }}</td>
+            <td><span class="badge badge-{% if signup.Status == 'Accepted' %}success{% elif signup.Status == 'Rejected' %}danger{% else %}warning{% endif %}">{{ signup.Status }}</span></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>You have not signed up for any events yet. <a href="{{ url_for('list_events') }}">Browse events now!</a></p>
+{% endif %}
+
+{% endblock %}

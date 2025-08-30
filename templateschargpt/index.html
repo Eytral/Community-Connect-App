@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to Community Connect</h1>
+
+{% if session.get("user_id") %}
+    {% if session.get("account_type") == "volunteer" %}
+        <p>Hello, {{ session.get("name", "Volunteer") }}!</p>
+        <p><a href="{{ url_for('list_events') }}">Browse Events</a></p>
+        <p><a href="{{ url_for('list_orgs') }}">View Organisations</a></p>
+
+    {% elif session.get("account_type") == "organisation" %}
+        <p>Hello, {{ session.get("name", "Organisation") }}!</p>
+        <p><a href="{{ url_for('list_events') }}">Manage Your Events</a></p>
+        <p><a href="{{ url_for('list_volunteers') }}">View Volunteers</a></p>
+    {% endif %}
+{% else %}
+    <p>Please <a href="{{ url_for('login') }}">log in</a> or 
+       <a href="{{ url_for('register') }}">register</a> to get started.</p>
+{% endif %}
+{% endblock %}

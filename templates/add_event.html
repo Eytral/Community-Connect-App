@@ -1,20 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Add Event</h2>
+<h2 class="mb-4">Create New Event</h2>
 <form method="POST">
-    Name*: <input type="text" name="Name" required><br>
-    Description: <textarea name="Description"></textarea><br>
-    Date: <input type="date" name="Date"><br>
-    Start Time: <input type="time" name="StartTime"><br>
-    End Time: <input type="time" name="EndTime"><br>
-    Location: <input type="text" name="Location"><br>
-    Status: <input type="text" name="Status"><br>
-    Organisation*: 
-    <select name="OrganisationID" required>
-        {% for o in orgs %}
-            <option value="{{ o.OrganisationID }}">{{ o.Name }}</option>
-        {% endfor %}
-    </select><br>
-    <button type="submit">Add Event</button>
+    <div class="form-group">
+        <label for="name">Event Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" class="form-control" id="date" name="date" required>
+    </div>
+    <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" class="form-control" id="location" name="location">
+    </div>
+    <div class="form-group">
+        <label for="start_time">Start Time</label>
+        <input type="time" class="form-control" id="start_time" name="start_time">
+    </div>
+    <div class="form-group">
+        <label for="end_time">End Time</label>
+        <input type="time" class="form-control" id="end_time" name="end_time">
+    </div>
+    <button type="submit" class="btn btn-primary">Create Event</button>
 </form>
 {% endblock %}

@@ -22,17 +22,34 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def init_db():
-    if not os.path.exists(DATABASE):
-        with app.app_context():
-            db = get_db()
-            with open("schema.sql", "r") as f:
-                db.executescript(f.read())
-            with open("seed.sql", "r") as f:
-                db.executescript(f.read())
-            db.commit()
+def ensure_min_schema():
+    db = get_db()
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS VolunteerSkills (
+            VolunteerID INTEGER NOT NULL,
+            SkillID INTEGER NOT NULL,
+            PRIMARY KEY (VolunteerID, SkillID),
+            FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
+            FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
+        );
+    """)
+    db.commit()
 
-# ---------- Login Required Decorator ----------
+def init_db():
+    first_time = not os.path.exists(DATABASE)
+    with app.app_context():
+        db = get_db()
+        if first_time:
+            if os.path.exists("schema.sql"):
+                with open("schema.sql", "r") as f:
+                    db.executescript(f.read())
+            if os.path.exists("seed.sql"):
+                with open("seed.sql", "r") as f:
+                    db.executescript(f.read())
+            db.commit()
+        ensure_min_schema()
+
+# ---------- Auth & Role Decorators ----------
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -42,18 +59,58 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def volunteer_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if session.get("account_type") != "volunteer":
+            flash("Volunteers only.", "error")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    return wrapper
+
+def org_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if session.get("account_type") != "organisation":
+            flash("Organisations only.", "error")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    return wrapper
+
 # ---------- Auth Routes ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "volunteer")
+
         db = get_db()
-        user = db.execute("SELECT * FROM Volunteers WHERE Email=?", (request.form["Email"],)).fetchone()
-        if user and check_password_hash(user["Password"], request.form["Password"]):
-            session["user_id"] = user["VolunteerID"]
-            session["email"] = user["Email"]
-            flash("Logged in successfully.", "success")
-            return redirect(url_for("index"))
-        flash("Invalid email or password.", "error")
+
+        if role == "volunteer":
+            volunteer = db.execute("SELECT * FROM Volunteers WHERE Email = ?", (email,)).fetchone()
+            if volunteer and check_password_hash(volunteer["Password"], password):
+                session.clear()
+                session["user_id"] = volunteer["VolunteerID"]
+                session["email"] = volunteer["Email"]
+                session["name"] = volunteer["FirstName"]
+                session["account_type"] = "volunteer"
+                flash("Logged in as Volunteer.", "success")
+                return redirect(url_for("index"))
+
+        elif role == "organisation":
+            org = db.execute("SELECT * FROM Organisations WHERE Email = ?", (email,)).fetchone()
+            if org and check_password_hash(org["Password"], password):
+                session.clear()
+                session["user_id"] = org["OrganisationID"]
+                session["email"] = org["Email"]
+                session["name"] = org["Name"]
+                session["account_type"] = "organisation"
+                flash("Logged in as Organisation.", "success")
+                return redirect(url_for("index"))
+
+        flash("Invalid email, role, or password.", "error")
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -62,432 +119,634 @@ def logout():
     flash("Logged out successfully.", "success")
     return redirect(url_for("login"))
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
+@app.route("/register_select")
+def register_select():
+    """Renders a page for the user to choose their account type."""
+    return render_template("register_select.html")
+
+
+@app.route("/register_volunteer", methods=["GET", "POST"])
+def register_volunteer_page():
+    """
+    Renders the volunteer registration form and handles form submission.
+    """
     if request.method == "POST":
         db = get_db()
-        first = request.form.get("FirstName")
-        last = request.form.get("LastName")
-        email = request.form.get("Email")
-        password = request.form.get("Password")
-        if not first or not last or not email or not password:
-            flash("Please fill in all required fields.", "error")
-            return redirect(url_for("register"))
-        hashed = generate_password_hash(password)
-        phone = request.form.get("Phone")
-        address = request.form.get("Address")
-        dob = request.form.get("DateOfBirth")
-        availability = request.form.get("Availability")
-        emergency = request.form.get("EmergencyContact")
-        profile_photo = None
-        if "ProfilePhoto" in request.files:
-            file = request.files["ProfilePhoto"]
-            if file.filename:
-                filename = file.filename
-                file.save(os.path.join("static/uploads", filename))
-                profile_photo = filename
+        email = request.form["email"].strip()
+
+        # Check for existing email in both tables to prevent duplicates
+        existing_volunteer = db.execute("SELECT 1 FROM Volunteers WHERE Email = ?", (email,)).fetchone()
+        existing_organisation = db.execute("SELECT 1 FROM Organisations WHERE Email = ?", (email,)).fetchone()
+        
+        if existing_volunteer or existing_organisation:
+            flash("An account with that email already exists.", "error")
+            return redirect(url_for("register_volunteer_page"))
+
+        # Get availability from the checkbox: 1 if checked, 0 otherwise
+        availability = 1 if 'availability' in request.form else 0
+        password = generate_password_hash(request.form["password"])
+
         try:
             db.execute(
-                """INSERT INTO Volunteers 
-                (FirstName, LastName, Email, Password, Phone, Address, DateOfBirth, Availability, ProfilePhoto, EmergencyContact)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (first, last, email, hashed, phone, address, dob, availability, profile_photo, emergency)
+                """INSERT INTO Volunteers
+                   (FirstName, LastName, Email, Password, Phone, Address, DateOfBirth, Availability, EmergencyContact)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    request.form.get("first_name"),
+                    request.form.get("last_name"),
+                    email,
+                    password,
+                    request.form.get("phone"),
+                    request.form.get("address"),
+                    request.form.get("dob"),
+                    availability,
+                    request.form.get("emergency_contact"),
+                ),
             )
             db.commit()
-            flash("Registration successful! Please log in.", "success")
+            flash("Volunteer registration successful! You can now log in.", "success")
             return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
-            flash("Email already exists.", "error")
-            return redirect(url_for("register"))
-    return render_template("register.html")
+            
+        except sqlite3.Error as e:
+            db.rollback()
+            flash(f"An error occurred during registration: {e}", "error")
+            return redirect(url_for("register_volunteer_page"))
 
-# ---------- Main ----------
+    # Render the registration page for GET requests
+    return render_template("register_volunteer.html")
+
+@app.route("/register_organisation", methods=["GET", "POST"])
+def register_organisation_page():
+    """Renders the organisation registration form and handles its submission."""
+    if request.method == "POST":
+        # This is where you would place the organisation registration logic
+        # that was previously in your main register() function.
+        db = get_db()
+        email = request.form["email"].strip()
+        
+        # Check for existing email in both tables to prevent duplicates
+        existing_volunteer = db.execute("SELECT 1 FROM Volunteers WHERE Email = ?", (email,)).fetchone()
+        existing_organisation = db.execute("SELECT 1 FROM Organisations WHERE Email = ?", (email,)).fetchone()
+        if existing_volunteer or existing_organisation:
+            flash("An account with that email already exists.", "error")
+            return redirect(url_for("register_organisation_page"))
+
+        # Your database insert logic for organisations
+        db.execute(
+            """INSERT INTO Organisations
+               (Name, ContactPerson, Email, Password, Phone, Address, Website, Description, Logo)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                request.form.get("name"),
+                request.form.get("contact_person"),
+                email,
+                generate_password_hash(request.form["password"]),
+                request.form.get("phone"),
+                request.form.get("address"),
+                request.form.get("website"),
+                request.form.get("description"),
+                request.form.get("logo"),
+            ),
+        )
+        
+        db.commit()
+        flash("Organisation registration successful! You can now log in.", "success")
+        return redirect(url_for("login"))
+
+    # Renders the organisation registration form for GET requests
+    return render_template("register_organisation.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """
+    Handles user registration for both volunteers and organisations.
+    """
+    if request.method == "POST":
+        db = get_db()
+        account_type = request.form.get("account_type")
+        email = request.form["email"].strip()
+        password = generate_password_hash(request.form["password"])
+
+        try:
+            # Check for existing email in both tables to prevent duplicates
+            existing_volunteer = db.execute("SELECT 1 FROM Volunteers WHERE Email = ?", (email,)).fetchone()
+            existing_organisation = db.execute("SELECT 1 FROM Organisations WHERE Email = ?", (email,)).fetchone()
+            if existing_volunteer or existing_organisation:
+                flash("An account with that email already exists.", "error")
+                return redirect(url_for("register"))
+
+            if account_type == "volunteer":
+                # Get availability from the checkbox: 1 if checked, 0 otherwise
+                availability = 1 if 'availability' in request.form else 0
+
+                db.execute(
+                    """INSERT INTO Volunteers
+                       (FirstName, LastName, Email, Password, Phone, Address, DateOfBirth, Availability, EmergencyContact)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        request.form.get("first_name"),
+                        request.form.get("last_name"),
+                        email,
+                        password,
+                        request.form.get("phone"),
+                        request.form.get("address"),
+                        request.form.get("dob"),
+                        availability,
+                        request.form.get("emergency_contact"),
+                    ),
+                )
+                
+            elif account_type == "organisation":
+                db.execute(
+                    """INSERT INTO Organisations
+                       (Name, ContactPerson, Email, Password, Phone, Address, Website, Description, LogoURL)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        request.form.get("name"),
+                        request.form.get("contact_person"),
+                        email,
+                        password,
+                        request.form.get("phone"),
+                        request.form.get("address"),
+                        request.form.get("website"),
+                        request.form.get("description"),
+                        request.form.get("logo"),
+                    ),
+                )
+            
+            db.commit()
+            flash("Registration successful! You can now log in.", "success")
+            return redirect(url_for("login"))
+            
+        except sqlite3.Error as e:
+            db.rollback()
+            flash(f"An error occurred during registration: {e}", "error")
+            return redirect(url_for("register"))
+
+    # Render the registration page for GET requests
+    return render_template("register.html")# ---------- Main Dashboards ----------
 @app.route("/")
 @login_required
 def index():
+    if session.get("account_type") == "volunteer":
+        return redirect(url_for("volunteer_dashboard"))
+    elif session.get("account_type") == "organisation":
+        return redirect(url_for("organisation_dashboard"))
     return render_template("index.html")
 
-# ---------- CRUD Routes ----------
-
-# --- Volunteers ---
-@app.route("/volunteers")
+@app.route("/volunteer/dashboard")
 @login_required
-def list_volunteers():
+@volunteer_required
+def volunteer_dashboard():
     db = get_db()
-    volunteers = db.execute("SELECT * FROM Volunteers").fetchall()
-    return render_template("volunteers.html", volunteers=volunteers)
+    # Fetch volunteer's upcoming signups
+    signups = db.execute(
+        """SELECT s.Status, e.Name AS EventName, e.Date, e.Location, o.Name AS OrgName, s.EventID
+           FROM Signups s
+           JOIN Events e ON s.EventID = e.EventID
+           JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+           WHERE s.VolunteerID = ?
+           ORDER BY date(e.Date) ASC""",
+        (session["user_id"],)
+    ).fetchall()
+    return render_template("volunteer_dashboard.html", signups=signups)
 
-@app.route("/volunteers/add", methods=["GET", "POST"])
+@app.route("/organisation/dashboard")
 @login_required
-def add_volunteer():
+@org_required
+def organisation_dashboard():
+    db = get_db()
+    # Fetch organisation's upcoming events
+    events = db.execute(
+        """SELECT EventID, Name, Description, Date, Location
+           FROM Events
+           WHERE OrganisationID = ?
+           ORDER BY date(Date) ASC""",
+        (session["user_id"],)
+    ).fetchall()
+    return render_template("organisation_dashboard.html", events=events)
+
+# ---------- Volunteer-Specific Routes ----------
+@app.route("/volunteer/account/edit", methods=["GET", "POST"])
+@login_required
+@volunteer_required
+def edit_volunteer_account():
+    db = get_db()
+    volunteer = db.execute(
+        "SELECT * FROM Volunteers WHERE VolunteerID=?",
+        (session["user_id"],),
+    ).fetchone()
+    if not volunteer:
+        flash("Volunteer account not found.", "error")
+        return redirect(url_for("index"))
+
     if request.method == "POST":
-        db = get_db()
         db.execute(
-            """INSERT INTO Volunteers 
-            (FirstName, LastName, Email, Phone, Address, DateOfBirth, Availability, ProfilePhoto, EmergencyContact)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            """UPDATE Volunteers
+               SET FirstName=?, LastName=?, Phone=?, Address=?, DateOfBirth=?, Availability=?, ProfilePhoto=?, EmergencyContact=?
+               WHERE VolunteerID=?""",
             (
-                request.form["FirstName"],
-                request.form["LastName"],
-                request.form["Email"],
-                request.form.get("Phone"),
-                request.form.get("Address"),
-                request.form.get("DateOfBirth"),
-                request.form.get("Availability"),
-                request.form.get("ProfilePhoto"),
-                request.form.get("EmergencyContact"),
+                request.form["first_name"].strip(),
+                request.form["last_name"].strip(),
+                request.form.get("phone"),
+                request.form.get("address"),
+                request.form.get("dob"),
+                request.form.get("availability"),
+                request.form.get("profile_photo"),
+                request.form.get("emergency_contact"),
+                session["user_id"],
             ),
         )
         db.commit()
-        flash("Volunteer added successfully.", "success")
-        return redirect(url_for("list_volunteers"))
-    return render_template("add_volunteer.html")
+        session["name"] = request.form["first_name"].strip()
+        flash("Account updated successfully.", "success")
+        return redirect(url_for("volunteer_dashboard"))
 
-@app.route("/volunteers/<int:id>/edit", methods=["GET", "POST"])
+    return render_template("edit_volunteer_account.html", volunteer=volunteer)
+
+@app.route("/volunteer/skills", methods=["GET", "POST"])
 @login_required
-def update_volunteer(id):
+@volunteer_required
+def manage_volunteer_skills():
     db = get_db()
-    volunteer = db.execute("SELECT * FROM Volunteers WHERE VolunteerID=?", (id,)).fetchone()
+    
+    # Handle adding an existing skill via POST request
     if request.method == "POST":
-        db.execute(
-            """UPDATE Volunteers 
-               SET FirstName=?, LastName=?, Email=?, Phone=?, Address=?, DateOfBirth=?, Availability=?, ProfilePhoto=?, EmergencyContact=?
-               WHERE VolunteerID=?""",
-            (
-                request.form["FirstName"],
-                request.form["LastName"],
-                request.form["Email"],
-                request.form.get("Phone"),
-                request.form.get("Address"),
-                request.form.get("DateOfBirth"),
-                request.form.get("Availability"),
-                request.form.get("ProfilePhoto"),
-                request.form.get("EmergencyContact"),
-                id
+        skill_id = request.form.get("skill_id")
+        if skill_id:
+            db.execute(
+                "INSERT OR IGNORE INTO VolunteerSkills (VolunteerID, SkillID) VALUES (?, ?)",
+                (session["user_id"], skill_id)
             )
+            db.commit()
+            flash("Skill added.", "success")
+        return redirect(url_for("manage_volunteer_skills"))
+
+    current_skills = db.execute(
+        """SELECT s.SkillID, s.Name, s.Description
+           FROM VolunteerSkills vs
+           JOIN Skills s ON vs.SkillID = s.SkillID
+           WHERE vs.VolunteerID = ?""",
+        (session["user_id"],)
+    ).fetchall()
+    
+    all_skills = db.execute("SELECT * FROM Skills").fetchall()
+    
+    return render_template("manage_volunteer_skills.html", current_skills=current_skills, all_skills=all_skills)
+
+
+@app.route("/volunteer/skills/add_new", methods=["POST"])
+@login_required
+@volunteer_required
+def add_new_skill():
+    db = get_db()
+    new_skill_name = request.form.get("new_skill_name", "").strip()
+    new_skill_description = request.form.get("new_skill_description", "").strip()
+
+    if not new_skill_name:
+        flash("Skill name cannot be empty.", "error")
+        return redirect(url_for("manage_volunteer_skills"))
+
+    try:
+        # Check if the skill already exists in the Skills table
+        existing_skill = db.execute("SELECT SkillID FROM Skills WHERE Name = ?", (new_skill_name,)).fetchone()
+        
+        if existing_skill:
+            skill_id = existing_skill["SkillID"]
+            flash("This skill already exists. It has been added to your profile.", "info")
+        else:
+            # If the skill doesn't exist, insert it into the Skills table
+            result = db.execute(
+                "INSERT INTO Skills (Name, Description) VALUES (?, ?)",
+                (new_skill_name, new_skill_description)
+            )
+            skill_id = result.lastrowid
+            flash(f"New skill '{new_skill_name}' created and added to your profile.", "success")
+
+        # Now link the skill to the volunteer
+        db.execute(
+            "INSERT OR IGNORE INTO VolunteerSkills (VolunteerID, SkillID) VALUES (?, ?)",
+            (session["user_id"], skill_id)
         )
         db.commit()
-        flash("Volunteer updated successfully.", "success")
-        return redirect(url_for("list_volunteers"))
-    return render_template("update_volunteer.html", volunteer=volunteer)
 
-@app.route("/volunteers/<int:id>/delete", methods=["POST"])
+    except sqlite3.Error as e:
+        flash(f"An error occurred: {e}", "error")
+    
+    return redirect(url_for("manage_volunteer_skills"))
+
+
+@app.route("/volunteer/skills/<int:skill_id>/delete", methods=["POST"])
 @login_required
-def delete_volunteer(id):
+@volunteer_required
+def delete_volunteer_skill(skill_id):
     db = get_db()
-    db.execute("DELETE FROM Volunteers WHERE VolunteerID=?", (id,))
+    db.execute(
+        "DELETE FROM VolunteerSkills WHERE VolunteerID = ? AND SkillID = ?",
+        (session["user_id"], skill_id)
+    )
     db.commit()
-    flash("Volunteer deleted successfully.", "success")
-    return redirect(url_for("list_volunteers"))
+    flash("Skill removed.", "success")
+    return redirect(url_for("manage_volunteer_skills"))
 
-# --- Organisations ---
+@app.route("/volunteers/<int:volunteer_id>")
+@login_required
+def view_volunteer_profile(volunteer_id):
+    db = get_db()
+    volunteer = db.execute(
+        "SELECT VolunteerID, FirstName, LastName, Email, Phone, Address, Availability FROM Volunteers WHERE VolunteerID = ?",
+        (volunteer_id,)
+    ).fetchone()
+    if not volunteer:
+        flash("Volunteer not found.", "error")
+        return redirect(url_for("list_volunteers"))
+
+    skills = db.execute(
+        """SELECT s.Name, s.Description FROM VolunteerSkills vs
+           JOIN Skills s ON vs.SkillID = s.SkillID
+           WHERE vs.VolunteerID = ?""",
+        (volunteer_id,)
+    ).fetchall()
+
+    return render_template("view_volunteer_profile.html", volunteer=volunteer, skills=skills)
+
+# ---------- Organisation-Specific Routes ----------
+@app.route("/org/account/edit", methods=["GET", "POST"])
+@login_required
+@org_required
+def edit_org_account():
+    db = get_db()
+    org = db.execute(
+        "SELECT * FROM Organisations WHERE OrganisationID=?",
+        (session["user_id"],),
+    ).fetchone()
+    if not org:
+        flash("Organisation not found.", "error")
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        name = request.form["name"]
+        description = request.form.get("description")
+        phone = request.form.get("phone")
+        website = request.form.get("website")
+        contact_person = request.form.get("contact_person")
+        logo = request.form.get("logo")
+
+        db.execute(
+            """UPDATE Organisations
+               SET Name=?, Description=?, Phone=?, Website=?, ContactPerson=?, Logo=?
+               WHERE OrganisationID=?""",
+            (name, description, phone, website, contact_person, logo, session["user_id"]),
+        )
+        db.commit()
+        session["name"] = name
+        flash("Account updated successfully.", "success")
+        return redirect(url_for("organisation_dashboard"))
+
+    return render_template("edit_org_account.html", org=org)
+
+@app.route("/events/<int:event_id>/signups")
+@login_required
+@org_required
+def view_event_signups(event_id):
+    db = get_db()
+    event = db.execute("SELECT * FROM Events WHERE EventID=? AND OrganisationID=?", (event_id, session["user_id"])).fetchone()
+    if not event:
+        flash("Event not found or not authorised.", "error")
+        return redirect(url_for("list_events"))
+
+    signups = db.execute(
+        """SELECT s.SignupID, s.Status, v.VolunteerID, v.FirstName, v.LastName, v.Email, v.Phone
+           FROM Signups s
+           JOIN Volunteers v ON s.VolunteerID = v.VolunteerID
+           WHERE s.EventID = ?""",
+        (event_id,)
+    ).fetchall()
+    return render_template("view_signups.html", event=event, signups=signups)
+
+@app.route("/signups/<int:signup_id>/status", methods=["POST"])
+@login_required
+@org_required
+def update_signup_status(signup_id):
+    db = get_db()
+    new_status = request.form.get("status")
+
+    # Verify that the signup belongs to an event of the logged-in organisation
+    signup = db.execute(
+        """SELECT s.SignupID, s.EventID, e.OrganisationID  -- <-- ADDED s.EventID HERE
+           FROM Signups s
+           JOIN Events e ON s.EventID = e.EventID
+           WHERE s.SignupID = ?""",
+        (signup_id,)
+    ).fetchone()
+
+    if not signup or signup["OrganisationID"] != session["user_id"]:
+        flash("Not authorised to change this signup's status.", "error")
+        return redirect(url_for("organisation_dashboard"))
+
+    db.execute("UPDATE Signups SET Status = ? WHERE SignupID = ?", (new_status, signup_id))
+    db.commit()
+    flash(f"Signup status updated to '{new_status}'.", "success")
+    return redirect(url_for("view_event_signups", event_id=signup["EventID"]))
+
+# ---------- General Routes (Accessible to both Volunteers and Orgs) ----------
+@app.route("/events")
+@login_required
+def list_events():
+    """
+    Lists events for both volunteers and organisations.
+    Organisations see their own events and others' events separately.
+    Volunteers see all events with their signup status.
+    """
+    db = get_db()
+    user_id = session.get('user_id')
+    account_type = session.get('account_type')
+
+    if account_type == 'organisation':
+        # Fetch events created by the logged-in organisation
+        my_events = db.execute(
+            """SELECT e.*, o.Name AS OrgName 
+               FROM Events e 
+               JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+               WHERE e.OrganisationID = ? 
+               ORDER BY e.Date""",
+            (user_id,)
+        ).fetchall()
+
+        # Fetch events from other organisations
+        other_events = db.execute(
+            """SELECT e.*, o.Name AS OrgName 
+               FROM Events e 
+               JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+               WHERE e.OrganisationID != ? 
+               ORDER BY e.Date""",
+            (user_id,)
+        ).fetchall()
+        
+        return render_template(
+            "list_events.html", 
+            my_events=my_events, 
+            other_events=other_events
+        )
+
+    elif account_type == 'volunteer':
+        # Fetch all events along with the volunteer's signup status
+        events = db.execute(
+            """SELECT 
+                e.EventID, e.Name, e.Date, e.Location, o.Name AS OrgName, s.Status AS signup_status
+               FROM Events e
+               JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+               LEFT JOIN Signups s ON e.EventID = s.EventID AND s.VolunteerID = ?
+               ORDER BY e.Date""",
+            (user_id,)
+        ).fetchall()
+        
+        return render_template("list_events.html", events=events)
+        
+    # If for some reason the account type isn't set, redirect to login
+    return redirect(url_for('login'))
+
+@app.route("/events/<int:event_id>/signup", methods=["POST"])
+@login_required
+@volunteer_required
+def signup_for_event(event_id):
+    db = get_db()
+    # Check if the volunteer is already signed up
+    existing_signup = db.execute(
+        "SELECT 1 FROM Signups WHERE VolunteerID = ? AND EventID = ?",
+        (session["user_id"], event_id)
+    ).fetchone()
+
+    if existing_signup:
+        flash("You are already signed up for this event.", "info")
+    else:
+        db.execute(
+            "INSERT INTO Signups (VolunteerID, EventID, Status) VALUES (?, ?, 'Pending')",
+            (session["user_id"], event_id)
+        )
+        db.commit()
+        flash("Successfully signed up for the event! Your status is 'Pending'.", "success")
+    return redirect(url_for("list_events"))
+
+# In your app.py file, add this new route:
+
+@app.route("/events/<int:event_id>")
+@login_required
+def view_event(event_id):
+    """
+    Displays details for a single event.
+    Accessible to both volunteers and organisations.
+    """
+    db = get_db()
+    event = db.execute(
+        """SELECT e.*, o.Name AS OrgName
+           FROM Events e
+           JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+           WHERE e.EventID = ?""",
+        (event_id,)
+    ).fetchone()
+
+    if not event:
+        flash("Event not found.", "error")
+        return redirect(url_for('list_events'))
+
+    # If the user is a volunteer, also fetch their signup status for this event
+    signup_status = None
+    if session.get('account_type') == 'volunteer':
+        signup = db.execute(
+            "SELECT Status FROM Signups WHERE VolunteerID = ? AND EventID = ?",
+            (session['user_id'], event_id)
+        ).fetchone()
+        if signup:
+            signup_status = signup['Status']
+
+    return render_template("view_event.html", event=event, signup_status=signup_status)
+
 @app.route("/organisations")
 @login_required
 def list_orgs():
     db = get_db()
-    orgs = db.execute("SELECT * FROM Organisations").fetchall()
-    return render_template("organisations.html", orgs=orgs)
+    orgs = db.execute(
+        "SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson FROM Organisations"
+    ).fetchall()
+    return render_template("list_orgs.html", orgs=orgs)
 
-@app.route("/organisations/add", methods=["GET", "POST"])
+@app.route("/volunteers")
 @login_required
-def add_org():
-    if request.method == "POST":
-        db = get_db()
-        db.execute(
-            """INSERT INTO Organisations 
-            (Name, Description, ContactPerson, Email, Password, Phone, Address, Website, Logo)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                request.form["Name"],
-                request.form.get("Description"),
-                request.form.get("ContactPerson"),
-                request.form.get("Email"),
-                request.form.get("Password"),
-                request.form.get("Phone"),
-                request.form.get("Address"),
-                request.form.get("Website"),
-                request.form.get("Logo")
-            )
-        )
-        db.commit()
-        flash("Organisation added successfully.", "success")
-        return redirect(url_for("list_orgs"))
-    return render_template("add_org.html")
-
-@app.route("/organisations/<int:id>/edit", methods=["GET", "POST"])
-@login_required
-def update_org(id):
+def list_volunteers():
     db = get_db()
-    org = db.execute("SELECT * FROM Organisations WHERE OrganisationID=?", (id,)).fetchone()
-    if request.method == "POST":
-        db.execute(
-            """UPDATE Organisations
-               SET Name=?, Description=?, ContactPerson=?, Email=?, Password=?, Phone=?, Address=?, Website=?, Logo=?
-               WHERE OrganisationID=?""",
-            (
-                request.form["Name"],
-                request.form.get("Description"),
-                request.form.get("ContactPerson"),
-                request.form.get("Email"),
-                request.form.get("Password"),
-                request.form.get("Phone"),
-                request.form.get("Address"),
-                request.form.get("Website"),
-                request.form.get("Logo"),
-                id
-            )
-        )
-        db.commit()
-        flash("Organisation updated successfully.", "success")
-        return redirect(url_for("list_orgs"))
-    return render_template("update_org.html", org=org)
+    volunteers = db.execute(
+        "SELECT VolunteerID, FirstName, LastName, Email, Phone, Availability FROM Volunteers"
+    ).fetchall()
+    return render_template("list_volunteers.html", volunteers=volunteers)
 
-@app.route("/organisations/<int:id>/delete", methods=["POST"])
-@login_required
-def delete_org(id):
-    db = get_db()
-    db.execute("DELETE FROM Organisations WHERE OrganisationID=?", (id,))
-    db.commit()
-    flash("Organisation deleted successfully.", "success")
-    return redirect(url_for("list_orgs"))
-
-# --- Events ---
-@app.route("/events")
-@login_required
-def list_events():
-    db = get_db()
-    events = db.execute("SELECT * FROM Events").fetchall()
-    return render_template("events.html", events=events)
-
+# ---------- Event Routes ----------
 @app.route("/events/add", methods=["GET", "POST"])
 @login_required
+@org_required
 def add_event():
-    db = get_db()
-    orgs = db.execute("SELECT * FROM Organisations").fetchall()
     if request.method == "POST":
+        db = get_db()
         db.execute(
             """INSERT INTO Events 
-            (OrganisationID, Name, Description, Date, StartTime, EndTime, Location, Status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               (OrganisationID, Name, Description, Date, StartTime, EndTime, Location)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
-                request.form["OrganisationID"],
-                request.form["Name"],
-                request.form.get("Description"),
-                request.form.get("Date"),
-                request.form.get("StartTime"),
-                request.form.get("EndTime"),
-                request.form.get("Location"),
-                request.form.get("Status")
+                session["user_id"],
+                request.form["name"],
+                request.form.get("description"),
+                request.form.get("date"),
+                request.form.get("start_time"),
+                request.form.get("end_time"),
+                request.form.get("location"),
             )
         )
         db.commit()
-        flash("Event added successfully.", "success")
+        flash("Event created.", "success")
         return redirect(url_for("list_events"))
-    return render_template("add_event.html", orgs=orgs)
+    return render_template("add_event.html")
 
-@app.route("/events/<int:id>/edit", methods=["GET", "POST"])
+@app.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
 @login_required
-def update_event(id):
+@org_required
+def edit_event(event_id):
     db = get_db()
-    event = db.execute("SELECT * FROM Events WHERE EventID=?", (id,)).fetchone()
-    orgs = db.execute("SELECT * FROM Organisations").fetchall()
+    event = db.execute("SELECT * FROM Events WHERE EventID=? AND OrganisationID=?", (event_id, session["user_id"])).fetchone()
+    if not event:
+        flash("Not authorised.", "error")
+        return redirect(url_for("list_events"))
+
     if request.method == "POST":
         db.execute(
-            """UPDATE Events 
-               SET OrganisationID=?, Name=?, Description=?, Date=?, StartTime=?, EndTime=?, Location=?, Status=?
-               WHERE EventID=?""",
+            """UPDATE Events
+               SET Name=?, Description=?, Date=?, Location=?, StartTime=?, EndTime=?
+               WHERE EventID=? AND OrganisationID=?""",
             (
-                request.form["OrganisationID"],
-                request.form["Name"],
-                request.form.get("Description"),
-                request.form.get("Date"),
-                request.form.get("StartTime"),
-                request.form.get("EndTime"),
-                request.form.get("Location"),
-                request.form.get("Status"),
-                id
+                request.form["name"],
+                request.form.get("description"),
+                request.form.get("date"),
+                request.form.get("location"),
+                request.form.get("start_time"),
+                request.form.get("end_time"),
+                event_id,
+                session["user_id"]
             )
         )
         db.commit()
-        flash("Event updated successfully.", "success")
+        flash("Event updated.", "success")
         return redirect(url_for("list_events"))
-    return render_template("update_event.html", event=event, orgs=orgs)
 
-@app.route("/events/<int:id>/delete", methods=["POST"])
+    return render_template("edit_event.html", event=event)
+
+@app.route("/events/<int:event_id>/delete", methods=["POST"])
 @login_required
-def delete_event(id):
+@org_required
+def delete_event(event_id):
     db = get_db()
-    db.execute("DELETE FROM Events WHERE EventID=?", (id,))
+    db.execute("DELETE FROM Events WHERE EventID=? AND OrganisationID=?", (event_id, session["user_id"]))
     db.commit()
-    flash("Event deleted successfully.", "success")
+    flash("Event deleted.", "success")
     return redirect(url_for("list_events"))
-
-# --- Roles ---
-@app.route("/roles")
-@login_required
-def list_roles():
-    db = get_db()
-    roles = db.execute("SELECT * FROM Roles").fetchall()
-    return render_template("roles.html", roles=roles)
-
-@app.route("/roles/add", methods=["GET", "POST"])
-@login_required
-def add_role():
-    if request.method == "POST":
-        db = get_db()
-        db.execute(
-            "INSERT INTO Roles (Name, Description) VALUES (?, ?)",
-            (request.form["Name"], request.form.get("Description"))
-        )
-        db.commit()
-        flash("Role added successfully.", "success")
-        return redirect(url_for("list_roles"))
-    return render_template("add_role.html")
-
-@app.route("/roles/<int:id>/edit", methods=["GET", "POST"])
-@login_required
-def update_role(id):
-    db = get_db()
-    role = db.execute("SELECT * FROM Roles WHERE RoleID=?", (id,)).fetchone()
-    if request.method == "POST":
-        db.execute(
-            "UPDATE Roles SET Name=?, Description=? WHERE RoleID=?",
-            (request.form["Name"], request.form.get("Description"), id)
-        )
-        db.commit()
-        flash("Role updated successfully.", "success")
-        return redirect(url_for("list_roles"))
-    return render_template("update_role.html", role=role)
-
-@app.route("/roles/<int:id>/delete", methods=["POST"])
-@login_required
-def delete_role(id):
-    db = get_db()
-    db.execute("DELETE FROM Roles WHERE RoleID=?", (id,))
-    db.commit()
-    flash("Role deleted successfully.", "success")
-    return redirect(url_for("list_roles"))
-
-# --- Skills ---
-@app.route("/skills")
-@login_required
-def list_skills():
-    db = get_db()
-    skills = db.execute("SELECT * FROM Skills").fetchall()
-    return render_template("skills.html", skills=skills)
-
-@app.route("/skills/add", methods=["GET", "POST"])
-@login_required
-def add_skill():
-    if request.method == "POST":
-        db = get_db()
-        db.execute(
-            "INSERT INTO Skills (Name, Description) VALUES (?, ?)",
-            (request.form["Name"], request.form.get("Description"))
-        )
-        db.commit()
-        flash("Skill added successfully.", "success")
-        return redirect(url_for("list_skills"))
-    return render_template("add_skill.html")
-
-@app.route("/skills/<int:id>/edit", methods=["GET", "POST"])
-@login_required
-def update_skill(id):
-    db = get_db()
-    skill = db.execute("SELECT * FROM Skills WHERE SkillID=?", (id,)).fetchone()
-    if request.method == "POST":
-        db.execute(
-            "UPDATE Skills SET Name=?, Description=? WHERE SkillID=?",
-            (request.form["Name"], request.form.get("Description"), id)
-        )
-        db.commit()
-        flash("Skill updated successfully.", "success")
-        return redirect(url_for("list_skills"))
-    return render_template("update_skill.html", skill=skill)
-
-@app.route("/skills/<int:id>/delete", methods=["POST"])
-@login_required
-def delete_skill(id):
-    db = get_db()
-    db.execute("DELETE FROM Skills WHERE SkillID=?", (id,))
-    db.commit()
-    flash("Skill deleted successfully.", "success")
-    return redirect(url_for("list_skills"))
-
-# --- Signups ---
-@app.route("/signups")
-@login_required
-def list_signups():
-    db = get_db()
-    signups = db.execute(
-        """SELECT s.SignupID, v.FirstName || ' ' || v.LastName AS VolunteerName,
-                  e.Name AS EventName, r.Name AS RoleName, s.Status
-           FROM Signups s
-           JOIN Volunteers v ON s.VolunteerID = v.VolunteerID
-           JOIN Events e ON s.EventID = e.EventID
-           JOIN Roles r ON s.RoleID = r.RoleID"""
-    ).fetchall()
-    return render_template("signups.html", signups=signups)
-
-@app.route("/signups/add", methods=["GET", "POST"])
-@login_required
-def add_signup():
-    db = get_db()
-    volunteers = db.execute("SELECT * FROM Volunteers").fetchall()
-    events = db.execute("SELECT * FROM Events").fetchall()
-    roles = db.execute("SELECT * FROM Roles").fetchall()
-    if request.method == "POST":
-        db.execute(
-            "INSERT INTO Signups (VolunteerID, EventID, RoleID, Status) VALUES (?, ?, ?, ?)",
-            (
-                request.form["VolunteerID"],
-                request.form["EventID"],
-                request.form["RoleID"],
-                request.form.get("Status")
-            )
-        )
-        db.commit()
-        flash("Signup added successfully.", "success")
-        return redirect(url_for("list_signups"))
-    return render_template("add_signup.html", volunteers=volunteers, events=events, roles=roles)
-
-# --- Signups Edit ---
-@app.route("/signups/<int:id>/edit", methods=["GET", "POST"])
-@login_required
-def update_signup(id):
-    db = get_db()
-    signup = db.execute("SELECT * FROM Signups WHERE SignupID=?", (id,)).fetchone()
-    volunteers = db.execute("SELECT * FROM Volunteers").fetchall()
-    events = db.execute("SELECT * FROM Events").fetchall()
-    roles = db.execute("SELECT * FROM Roles").fetchall()
-
-    if request.method == "POST":
-        db.execute(
-            """UPDATE Signups
-               SET VolunteerID=?, EventID=?, RoleID=?, Status=?
-               WHERE SignupID=?""",
-            (
-                request.form["VolunteerID"],
-                request.form["EventID"],
-                request.form["RoleID"],
-                request.form["Status"],
-                id
-            )
-        )
-        db.commit()
-        return redirect(url_for("list_signups"))
-
-    return render_template("update_signup.html", signup=signup, volunteers=volunteers, events=events, roles=roles)
-
-
-@app.route("/signups/<int:id>/delete", methods=["POST"])
-@login_required
-def delete_signup(id):
-    db = get_db()
-    db.execute("DELETE FROM Signups WHERE SignupID=?", (id,))
-    db.commit()
-    flash("Signup deleted successfully.", "success")
-    return redirect(url_for("list_signups"))
 
 # ---------- Main ----------
 if __name__ == "__main__":

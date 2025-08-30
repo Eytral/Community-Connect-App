@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Events</h2>
+
+{% if session.get('account_type') == 'organisation' %}
+    <h3 class="mt-4">My Events</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in my_events %}
+            <tr>
+                <td><a href="{{ url_for('view_event_signups', event_id=event.EventID) }}">{{ event.Name }}</a></td>
+                <td>{{ event.Date }}</td>
+                <td>{{ event.Location }}</td>
+                <td>
+                    <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
+                    <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No events found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 class="mt-4">Other Organisations' Events</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Organisation</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in other_events %}
+            <tr>
+                <td>{{ event.Name }}</td>
+                <td>{{ event.Date }}</td>
+                <td>{{ event.OrgName }}</td>
+                <td>{{ event.Location }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No events found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% else %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Organisation</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td><a href="{{ url_for('view_event', event_id=event.EventID) }}">{{ event.Name }}</a></td>
+                <td>{{ event.Date }}</td>
+                <td>{{ event.OrgName }}</td>
+                <td>{{ event.Location }}</td>
+                <td>
+                    {% if event.signup_status == 'Accepted' %}
+                        <span class="badge bg-success">Accepted</span>
+                    {% elif event.signup_status == 'Pending' %}
+                        <span class="badge bg-warning">Pending</span>
+                    {% elif event.signup_status == 'Rejected' %}
+                        <span class="badge bg-danger">Rejected</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Not Signed Up</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not event.signup_status %}
+                        <form action="{{ url_for('signup_for_event', event_id=event.EventID) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">Sign Up</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-sm btn-info">View Details</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No events found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+{% endblock %}

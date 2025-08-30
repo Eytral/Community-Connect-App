@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">All Volunteers</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Availability</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for volunteer in volunteers %}
+        <tr>
+            <td>{{ volunteer.FirstName }} {{ volunteer.LastName }}</td>
+            <td>{{ volunteer.Email }}</td>
+            <td>{{ volunteer.Phone or 'N/A' }}</td>
+            <td>
+                {% if volunteer.Availability %}
+                    <span class="badge badge-success">Available</span>
+                {% else %}
+                    <span class="badge badge-secondary">Not Available</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('view_volunteer_profile', volunteer_id=volunteer.VolunteerID) }}" class="btn btn-sm btn-info">View Profile</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

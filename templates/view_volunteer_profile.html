@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Volunteer Profile: {{ volunteer.FirstName }} {{ volunteer.LastName }}</h2>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Email:</strong> {{ volunteer.Email }}</p>
+        <p><strong>Phone:</strong> {{ volunteer.Phone or 'N/A' }}</p>
+        <p><strong>Address:</strong> {{ volunteer.Address or 'N/A' }}</p>
+        
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="availability_display" disabled {% if volunteer.Availability %}checked{% endif %}>
+            <label class="form-check-label" for="availability_display">Currently Available</label>
+        </div>
+
+        <h5 class="mt-4">Skills</h5>
+        {% if skills %}
+            <ul class="list-group">
+                {% for skill in skills %}
+                    <li class="list-group-item">
+                        <strong>{{ skill.Name }}</strong>
+                        <p class="mb-0 text-muted">{{ skill.Description }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">This volunteer has not listed any skills yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Event Details: {{ event.Name }}</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Event Details</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Organisation:</strong> {{ event.OrgName }}</p>
+        <p><strong>Date:</strong> {{ event.Date }}</p>
+        <p><strong>Location:</strong> {{ event.Location }}</p>
+        {% if event.Description %}
+            <p><strong>Description:</strong> {{ event.Description }}</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if session.get('account_type') == 'volunteer' %}
+    <h3 class="mt-4">Your Status</h3>
+    <div class="card mb-4">
+        <div class="card-body">
+            {% if signup_status == 'Accepted' %}
+                <p>You have been <span class="badge bg-success">Accepted</span> to volunteer for this event.</p>
+            {% elif signup_status == 'Pending' %}
+                <p>Your application is <span class="badge bg-warning">Pending</span> review.</p>
+            {% elif signup_status == 'Rejected' %}
+                <p>Your application was <span class="badge bg-danger">Rejected</span>.</p>
+            {% else %}
+                <p>You are not currently signed up for this event.</p>
+                <form action="{{ url_for('signup_for_event', event_id=event.EventID) }}" method="POST">
+                    <button type="submit" class="btn btn-primary mt-2">Sign Up for this Event</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<a href="{{ url_for('list_events') }}" class="btn btn-secondary">Back to Events</a>
+{% endblock %}
