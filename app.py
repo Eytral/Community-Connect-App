@@ -216,75 +216,7 @@ def register_organisation_page():
     # Renders the organisation registration form for GET requests
     return render_template("register_organisation.html")
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    """
-    Handles user registration for both volunteers and organisations.
-    """
-    if request.method == "POST":
-        db = get_db()
-        account_type = request.form.get("account_type")
-        email = request.form["email"].strip()
-        password = generate_password_hash(request.form["password"])
 
-        try:
-            # Check for existing email in both tables to prevent duplicates
-            existing_volunteer = db.execute("SELECT 1 FROM Volunteers WHERE Email = ?", (email,)).fetchone()
-            existing_organisation = db.execute("SELECT 1 FROM Organisations WHERE Email = ?", (email,)).fetchone()
-            if existing_volunteer or existing_organisation:
-                flash("An account with that email already exists.", "error")
-                return redirect(url_for("register"))
-
-            if account_type == "volunteer":
-                # Get availability from the checkbox: 1 if checked, 0 otherwise
-                availability = 1 if 'availability' in request.form else 0
-
-                db.execute(
-                    """INSERT INTO Volunteers
-                       (FirstName, LastName, Email, Password, Phone, Address, DateOfBirth, Availability, EmergencyContact)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        request.form.get("first_name"),
-                        request.form.get("last_name"),
-                        email,
-                        password,
-                        request.form.get("phone"),
-                        request.form.get("address"),
-                        request.form.get("dob"),
-                        availability,
-                        request.form.get("emergency_contact"),
-                    ),
-                )
-                
-            elif account_type == "organisation":
-                db.execute(
-                    """INSERT INTO Organisations
-                       (Name, ContactPerson, Email, Password, Phone, Address, Website, Description, LogoURL)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        request.form.get("name"),
-                        request.form.get("contact_person"),
-                        email,
-                        password,
-                        request.form.get("phone"),
-                        request.form.get("address"),
-                        request.form.get("website"),
-                        request.form.get("description"),
-                        request.form.get("logo"),
-                    ),
-                )
-            
-            db.commit()
-            flash("Registration successful! You can now log in.", "success")
-            return redirect(url_for("login"))
-            
-        except sqlite3.Error as e:
-            db.rollback()
-            flash(f"An error occurred during registration: {e}", "error")
-            return redirect(url_for("register"))
-
-    # Render the registration page for GET requests
-    return render_template("register.html")# ---------- Main Dashboards ----------
 @app.route("/")
 @login_required
 def index():

@@ -1,9 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Organisations</h2>
-<ul>
-  {% for org in orgs %}
-    <li>{{ org['Name'] }} - {{ org['Email'] }}</li>
-  {% endfor %}
-</ul>
-{% endblock %}
