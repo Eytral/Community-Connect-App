@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2 class="mb-4">Register as a Volunteer</h2>
-<form action="{{ url_for('register') }}" method="POST">
+<form action="{{ url_for('register_volunteer_page') }}" method="POST">
     <input type="hidden" name="account_type" value="volunteer">
     <div class="form-group">
         <label for="first_name">First Name</label>
