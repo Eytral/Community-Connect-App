@@ -11,21 +11,21 @@ INSERT INTO Organisations (Name, Description, ContactPerson, Email, Password, Ph
 -- Volunteers
 -- -----------------------------
 INSERT INTO Volunteers (FirstName, LastName, Email, Password, Phone, Address, DateOfBirth, Availability, ProfilePhoto, EmergencyContact) VALUES
-('John', 'Doe', 'john@example.com', 'pass123', '5551234567', '789 Pine Rd', '1990-05-14', 'Weekends', 'john.jpg', '5559870001'),
-('Emma', 'Brown', 'emma@example.com', 'pass456', '5559876543', '101 Maple Ln', '1995-08-20', 'Evenings', 'emma.png', '5551230002'),
-('Liam', 'Smith', 'liam@example.com', 'liampass', '5551112222', '202 Birch Ln', '1992-03-12', 'Weekdays', 'liam.jpg', '5553330003'),
-('Sophia', 'Taylor', 'sophia@example.com', 'sophiapass', '5553334444', '303 Cedar St', '1998-07-25', 'Weekends', 'sophia.png', '5554440004'),
-('Noah', 'Wilson', 'noah@example.com', 'noahpass', '5555556666', '404 Spruce Rd', '1991-11-30', 'Evenings', 'noah.jpg', '5555550005'),
-('Olivia', 'Martinez', 'olivia@example.com', 'oliviapass', '5557778888', '505 Fir St', '1993-02-18', 'Weekends', 'olivia.png', '5556660006'),
-('Ava', 'Garcia', 'ava@example.com', 'avapass', '5559990000', '606 Walnut Ave', '1996-09-05', 'Evenings', 'ava.jpg', '5557770007'),
-('Isabella', 'Lee', 'isabella@example.com', 'isabellapass', '5552223333', '707 Cherry Ln', '1994-12-22', 'Weekdays', 'isabella.png', '5558880008'),
-('Mia', 'Harris', 'mia@example.com', 'miapass', '5554445555', '808 Poplar Rd', '1997-06-11', 'Weekends', 'mia.jpg', '5559990009'),
-('Ethan', 'Clark', 'ethan@example.com', 'ethanpass', '5556667777', '909 Pine St', '1990-01-28', 'Evenings', 'ethan.png', '5551110010'),
-('Lucas', 'Young', 'lucas@example.com', 'lucaspass', '5558889999', '1010 Maple St', '1992-10-10', 'Weekdays', 'lucas.jpg', '5552220011'),
-('Charlotte', 'King', 'charlotte@example.com', 'charlottepass', '5551011121', '1111 Oak St', '1995-03-03', 'Weekends', 'charlotte.png', '5553330012'),
-('Amelia', 'Wright', 'amelia@example.com', 'ameliapass', '5551213141', '1212 Birch St', '1993-07-14', 'Evenings', 'amelia.jpg', '5554440013'),
-('James', 'Scott', 'james@example.com', 'jamespass', '5551415161', '1313 Cedar Ln', '1991-05-05', 'Weekdays', 'james.png', '5555550014'),
-('Benjamin', 'Adams', 'benjamin@example.com', 'benjaminpass', '5551617181', '1414 Spruce Ave', '1996-11-11', 'Weekends', 'benjamin.jpg', '5556660015');
+('John', 'Doe', 'john@example.com', 'pass123', '5551234567', '789 Pine Rd', '1990-05-14', '1', 'john.jpg', '5559870001'),
+('Emma', 'Brown', 'emma@example.com', 'pass456', '5559876543', '101 Maple Ln', '1995-08-20', '1', 'emma.png', '5551230002'),
+('Liam', 'Smith', 'liam@example.com', 'liampass', '5551112222', '202 Birch Ln', '1992-03-12', '0', 'liam.jpg', '5553330003'),
+('Sophia', 'Taylor', 'sophia@example.com', 'sophiapass', '5553334444', '303 Cedar St', '1998-07-25', '1', 'sophia.png', '5554440004'),
+('Noah', 'Wilson', 'noah@example.com', 'noahpass', '5555556666', '404 Spruce Rd', '1991-11-30', '1', 'noah.jpg', '5555550005'),
+('Olivia', 'Martinez', 'olivia@example.com', 'oliviapass', '5557778888', '505 Fir St', '1993-02-18', '1', 'olivia.png', '5556660006'),
+('Ava', 'Garcia', 'ava@example.com', 'avapass', '5559990000', '606 Walnut Ave', '1996-09-05', '1', 'ava.jpg', '5557770007'),
+('Isabella', 'Lee', 'isabella@example.com', 'isabellapass', '5552223333', '707 Cherry Ln', '1994-12-22', '0', 'isabella.png', '5558880008'),
+('Mia', 'Harris', 'mia@example.com', 'miapass', '5554445555', '808 Poplar Rd', '1997-06-11', '1', 'mia.jpg', '5559990009'),
+('Ethan', 'Clark', 'ethan@example.com', 'ethanpass', '5556667777', '909 Pine St', '1990-01-28', '1', 'ethan.png', '5551110010'),
+('Lucas', 'Young', 'lucas@example.com', 'lucaspass', '5558889999', '1010 Maple St', '1992-10-10', '0', 'lucas.jpg', '5552220011'),
+('Charlotte', 'King', 'charlotte@example.com', 'charlottepass', '5551011121', '1111 Oak St', '1995-03-03', '1', 'charlotte.png', '5553330012'),
+('Amelia', 'Wright', 'amelia@example.com', 'ameliapass', '5551213141', '1212 Birch St', '1993-07-14', '1', 'amelia.jpg', '5554440013'),
+('James', 'Scott', 'james@example.com', 'jamespass', '5551415161', '1313 Cedar Ln', '1991-05-05', '0', 'james.png', '5555550014'),
+('Benjamin', 'Adams', 'benjamin@example.com', 'benjaminpass', '5551617181', '1414 Spruce Ave', '1996-11-11', '1', 'benjamin.jpg', '5556660015');
 
 -- -----------------------------
 -- Roles
