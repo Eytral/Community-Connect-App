@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <h2 class="mb-4">All Volunteers</h2>
+
+<form method="GET" action="{{ url_for('list_volunteers') }}" class="mb-4">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Search by skill (e.g., 'First Aid', 'Gardening')" value="{{ query }}">
+        <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>
@@ -8,6 +16,7 @@
             <th>Email</th>
             <th>Phone</th>
             <th>Availability</th>
+            <th>Skills</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -19,14 +28,27 @@
             <td>{{ volunteer.Phone or 'N/A' }}</td>
             <td>
                 {% if volunteer.Availability %}
-                    <span class="badge badge-success">Available</span>
+                    <span class="badge bg-success">Available</span>
                 {% else %}
-                    <span class="badge badge-secondary">Not Available</span>
+                    <span class="badge bg-secondary">Not Available</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if volunteer.Skills %}
+                    {% for skill in volunteer.Skills.split(',') %}
+                        <span class="badge bg-info text-dark me-1">{{ skill.strip() }}</span>
+                    {% endfor %}
+                {% else %}
+                    N/A
                 {% endif %}
             </td>
             <td>
                 <a href="{{ url_for('view_volunteer_profile', volunteer_id=volunteer.VolunteerID) }}" class="btn btn-sm btn-info">View Profile</a>
             </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No volunteers found matching your search.</td>
         </tr>
         {% endfor %}
     </tbody>

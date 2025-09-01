@@ -1,20 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="mb-4">Organisation Dashboard</h2>
-<p>Welcome, **{{ session['name'] }}**!</p>
-
-<div class="card my-4">
-    <div class="card-header">
-        <h5 class="mb-0">My Account</h5>
-    </div>
-    <div class="card-body">
-        <a href="{{ url_for('edit_org_account') }}" class="btn btn-info">Edit My Account</a>
-        <a href="{{ url_for('add_event') }}" class="btn btn-success">Create New Event</a>
-    </div>
-</div>
-
-<h3 class="mt-4">My Events</h3>
-{% if events %}
+<h2 class="mb-4">My Events</h2>
 <table class="table table-striped">
     <thead>
         <tr>
@@ -25,30 +11,52 @@
         </tr>
     </thead>
     <tbody>
-        {% for event in events %}
+        {% for event in my_events %}
         <tr>
-            <td>{{ event.Name }}</td>
+            <td><a href="#" class="event-details-link" data-event-id="{{ event.EventID }}">{{ event.Name }}</a></td>
             <td>{{ event.Date }}</td>
             <td>{{ event.Location }}</td>
             <td>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
-                    <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
-                    <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
-                    <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="POST" class="m-0">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
-                    </form>
-                </div>
+                <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
+                <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
+                </form>
             </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">No events found.</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<p>You have not created any events yet. <a href="{{ url_for('add_event') }}">Create one now!</a></p>
-{% endif %}
 
-<!-- Modal for event details -->
+<h3 class="mt-4">Other Organisations' Events</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Event Name</th>
+            <th>Date</th>
+            <th>Organisation</th>
+            <th>Location</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in other_events %}
+        <tr>
+            <td><a href="#" class="event-details-link" data-event-id="{{ event.EventID }}">{{ event.Name }}</a></td>
+            <td>{{ event.Date }}</td>
+            <td>{{ event.OrgName }}</td>
+            <td>{{ event.Location }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">No events found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -82,25 +90,17 @@
                 const eventId = this.dataset.eventId;
                 
                 fetch(`/events/${eventId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
                         document.getElementById('modalEventName').textContent = data.Name;
                         document.getElementById('modalOrgName').textContent = data.OrgName;
                         document.getElementById('modalEventDate').textContent = data.Date;
-                        document.getElementById('modalEventTime').textContent = `${data.StartTime || 'N/A'} - ${data.EndTime || 'N/A'}`;
+                        document.getElementById('modalEventTime').textContent = `${data.StartTime || ''} - ${data.EndTime || ''}`;
                         document.getElementById('modalEventLocation').textContent = data.Location;
                         document.getElementById('modalEventDescription').textContent = data.Description;
                         modal.show();
                     })
-                    .catch(error => {
-                        console.error('Error fetching event details:', error);
-                        alert("Could not load event details. Please try again.");
-                    });
+                    .catch(error => console.error('Error fetching event details:', error));
             });
         });
     });

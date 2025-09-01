@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, g, session, flash
+from flask import Flask, render_template, request, redirect, url_for, g, session, flash, jsonify
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -521,6 +521,34 @@ def list_events():
     # If for some reason the account type isn't set, redirect to login
     return redirect(url_for('login'))
 
+@app.route("/organisation/events_full")
+@login_required
+@org_required
+def organisation_events_full():
+    """
+    Lists all events for an organisation, with modals for detailed view.
+    """
+    db = get_db()
+    my_events = db.execute(
+        """SELECT * FROM Events WHERE OrganisationID = ? ORDER BY Date""",
+        (session["user_id"],)
+    ).fetchall()
+    
+    other_events = db.execute(
+        """SELECT e.*, o.Name AS OrgName 
+           FROM Events e 
+           JOIN Organisations o ON e.OrganisationID = o.OrganisationID
+           WHERE e.OrganisationID != ? 
+           ORDER BY e.Date""",
+        (session["user_id"],)
+    ).fetchall()
+    
+    return render_template(
+        "organisation_events_full.html",
+        my_events=my_events,
+        other_events=other_events
+    )
+
 @app.route("/events/<int:event_id>/signup", methods=["POST"])
 @login_required
 @volunteer_required
@@ -543,12 +571,38 @@ def signup_for_event(event_id):
         flash("Successfully signed up for the event! Your status is 'Pending'.", "success")
     return redirect(url_for("list_events"))
 
+
+@app.route("/events/<int:event_id>/retract_signup", methods=["POST"])
+@login_required
+@volunteer_required
+def retract_signup(event_id):
+    db = get_db()
+    volunteer_id = session.get('user_id')
+
+    signup = db.execute(
+        """SELECT Status FROM Signups WHERE VolunteerID = ? AND EventID = ?""",
+        (volunteer_id, event_id)
+    ).fetchone()
+
+    if signup and signup['Status'] != 'Accepted':
+        db.execute(
+            "DELETE FROM Signups WHERE VolunteerID = ? AND EventID = ?",
+            (volunteer_id, event_id)
+        )
+        db.commit()
+        flash("Your signup has been retracted.", "success")
+    elif signup and signup['Status'] == 'Accepted':
+        flash("Cannot retract signup after it has been accepted.", "error")
+    else:
+        flash("No pending signup found for this event.", "error")
+    
+    return redirect(url_for('list_events'))
+
 @app.route("/events/<int:event_id>")
 @login_required
 def view_event(event_id):
     """
-    Displays details for a single event.
-    Accessible to both volunteers and organisations.
+    Displays details for a single event, now as a JSON response for modals.
     """
     db = get_db()
     event = db.execute(
@@ -560,38 +614,113 @@ def view_event(event_id):
     ).fetchone()
 
     if not event:
-        flash("Event not found.", "error")
-        return redirect(url_for('list_events'))
+        # Return a JSON error if the event isn't found
+        return jsonify({"error": "Event not found"}), 404
 
-    # If the user is a volunteer, also fetch their signup status for this event
-    signup_status = None
-    if session.get('account_type') == 'volunteer':
-        signup = db.execute(
-            "SELECT Status FROM Signups WHERE VolunteerID = ? AND EventID = ?",
-            (session['user_id'], event_id)
-        ).fetchone()
-        if signup:
-            signup_status = signup['Status']
-
-    return render_template("view_event.html", event=event, signup_status=signup_status)
+    # Return the event data as a JSON object
+    return jsonify({
+        "EventID": event["EventID"],
+        "Name": event["Name"],
+        "OrgName": event["OrgName"],
+        "Date": event["Date"],
+        "StartTime": event["StartTime"],
+        "EndTime": event["EndTime"],
+        "Location": event["Location"],
+        "Description": event["Description"]
+    })
 
 @app.route("/organisations")
 @login_required
 def list_orgs():
+    """
+    Lists all organisations, with a special view for organisation users.
+    """
     db = get_db()
-    orgs = db.execute(
-        "SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson FROM Organisations"
-    ).fetchall()
-    return render_template("list_orgs.html", orgs=orgs)
+    
+    if session.get('account_type') == 'organisation':
+        # Fetch the logged-in organisation's details
+        my_org = db.execute(
+            """SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson
+               FROM Organisations WHERE OrganisationID = ?""",
+            (session['user_id'],)
+        ).fetchone()
+
+        # Fetch all other organisations
+        other_orgs = db.execute(
+            """SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson
+               FROM Organisations WHERE OrganisationID != ?""",
+            (session['user_id'],)
+        ).fetchall()
+
+        return render_template("list_orgs.html", my_org=my_org, other_orgs=other_orgs)
+    
+    else:
+        # For volunteers or other users, fetch all organisations
+        all_orgs = db.execute(
+            "SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson FROM Organisations"
+        ).fetchall()
+        return render_template("list_orgs.html", all_orgs=all_orgs)
+
+@app.route("/organisations/<int:org_id>")
+@login_required
+def view_org(org_id):
+    """
+    Returns the details of a single organisation as a JSON object.
+    """
+    db = get_db()
+    org = db.execute(
+        """SELECT OrganisationID, Name, Description, Email, Phone, Website, ContactPerson
+           FROM Organisations WHERE OrganisationID = ?""",
+        (org_id,)
+    ).fetchone()
+    
+    if not org:
+        return jsonify({"error": "Organisation not found"}), 404
+
+    # Return the organisation data as a JSON object
+    return jsonify({
+        "OrganisationID": org["OrganisationID"],
+        "Name": org["Name"],
+        "Description": org["Description"],
+        "Email": org["Email"],
+        "Phone": org["Phone"],
+        "Website": org["Website"],
+        "ContactPerson": org["ContactPerson"]
+    })
 
 @app.route("/volunteers")
 @login_required
 def list_volunteers():
     db = get_db()
-    volunteers = db.execute(
-        "SELECT VolunteerID, FirstName, LastName, Email, Phone, Availability FROM Volunteers"
-    ).fetchall()
-    return render_template("list_volunteers.html", volunteers=volunteers)
+    search_query = request.args.get('q', '')
+    
+    query = """
+        SELECT 
+            V.VolunteerID, 
+            V.FirstName, 
+            V.LastName, 
+            V.Email, 
+            V.Phone, 
+            V.Availability,
+            GROUP_CONCAT(S.Name) AS Skills
+        FROM 
+            Volunteers V
+        LEFT JOIN 
+            VolunteerSkills VS ON V.VolunteerID = VS.VolunteerID
+        LEFT JOIN 
+            Skills S ON VS.SkillID = S.SkillID
+    """
+    params = []
+
+    if search_query:
+        query += " WHERE S.Name LIKE ?"
+        params.append('%' + search_query + '%')
+
+    query += " GROUP BY V.VolunteerID ORDER BY V.FirstName"
+    
+    volunteers = db.execute(query, params).fetchall()
+
+    return render_template("list_volunteers.html", volunteers=volunteers, query=search_query)
 
 # ---------- Event Routes ----------
 @app.route("/events/add", methods=["GET", "POST"])
