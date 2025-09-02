@@ -612,6 +612,17 @@ def view_event(event_id):
            WHERE e.EventID = ?""",
         (event_id,)
     ).fetchone()
+    if session["account_type"] == 'volunteer':
+        signup = db.execute(
+        """SELECT s.*
+            FROM Events e
+            JOIN Signups s ON s.EventID = e.EventID
+            JOIN Volunteers v on s.VolunteerID = v.VolunteerID
+            WHERE e.EventID = ? AND v.VolunteerID = ?""",
+            (event_id, session["user_id"])
+        ).fetchone()
+    else:
+        signup = None
 
     if not event:
         # Return a JSON error if the event isn't found
@@ -626,8 +637,30 @@ def view_event(event_id):
         "StartTime": event["StartTime"],
         "EndTime": event["EndTime"],
         "Location": event["Location"],
-        "Description": event["Description"]
+        "Description": event["Description"],
     })
+
+@app.route('/events/<int:event_id>/skills_json')
+@login_required
+def get_event_skills_json(event_id):
+    db = get_db()
+    
+    # First, get the event name
+    event = db.execute("SELECT Name FROM Events WHERE EventID = ?", (event_id,)).fetchone()
+    if not event:
+        return jsonify({"error": "Event not found."}), 404
+
+    # Now, get all skills for that event
+    skills = db.execute("""
+        SELECT T2.Name FROM EventSkills AS T1
+        JOIN Skills AS T2 ON T1.SkillID = T2.SkillID
+        WHERE T1.EventID = ?
+    """, (event_id,)).fetchall()
+    
+    # Convert Row objects to dictionaries for JSON serialization
+    skill_names = [skill['Name'] for skill in skills]
+    
+    return jsonify({"event_name": event['Name'], "skills": skill_names})
 
 @app.route("/organisations")
 @login_required

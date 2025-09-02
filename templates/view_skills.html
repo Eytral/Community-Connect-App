@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Skills for "{{ event_name }}"</h2>
+{% if skills %}
+<ul class="list-group">
+    {% for skill in skills %}
+    <li class="list-group-item">{{ skill.Name }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No skills have been added for this event.</p>
+{% endif %}
+
+<a href="{{ url_for('list_events') }}" class="btn btn-secondary mt-3">Back to Events</a>
+{% endblock %}

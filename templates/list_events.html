@@ -21,6 +21,7 @@
                 <td>{{ event.Location }}</td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
                         <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
                         <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
                         <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
@@ -57,7 +58,10 @@
                 <td>{{ event.OrgName }}</td>
                 <td>{{ event.Location }}</td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
+                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
+                    </div>
                 </td>
             </tr>
             {% else %}
@@ -90,7 +94,10 @@
                 <td>{{ event.Location }}</td>
                 <td><span class="badge bg-success">Accepted</span></td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
+                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
+                    </div>
                 </td>
             </tr>
             {% else %}
@@ -123,6 +130,7 @@
                 <td><span class="badge bg-warning">Pending</span></td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
                         <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
                         <form action="{{ url_for('retract_signup', event_id=event.EventID) }}" method="POST" class="m-0">
                             <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Are you sure you want to retract your signup?');">Retract Signup</button>
@@ -160,6 +168,8 @@
                 <td><span class="badge bg-secondary">Not Signed Up</span></td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
+                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
                         <form action="{{ url_for('signup_for_event', event_id=event.EventID) }}" method="POST" class="m-0">
                             <button type="submit" class="btn btn-sm btn-success">Sign Up</button>
                         </form>
@@ -197,12 +207,32 @@
     </div>
 </div>
 
+<div class="modal fade" id="skillsModal" tabindex="-1" aria-labelledby="skillsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="skillsModalLabel">Required Skills</h5>
+            </div>
+            <div class="modal-body">
+                <h4 id="modalSkillsEventName"></h4>
+                <ul id="skillsList" class="list-group"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const links = document.querySelectorAll('.event-details-link');
-        const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+        const eventDetailsLinks = document.querySelectorAll('.event-details-link');
+        const skillsButtons = document.querySelectorAll('.view-skills-btn');
 
-        links.forEach(link => {
+        const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+        const skillsModal = new bootstrap.Modal(document.getElementById('skillsModal'));
+
+        eventDetailsLinks.forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const eventId = this.dataset.eventId;
@@ -221,11 +251,49 @@
                         document.getElementById('modalEventTime').textContent = `${data.StartTime || 'N/A'} - ${data.EndTime || 'N/A'}`;
                         document.getElementById('modalEventLocation').textContent = data.Location;
                         document.getElementById('modalEventDescription').textContent = data.Description;
-                        modal.show();
+                        eventModal.show();
                     })
                     .catch(error => {
                         console.error('Error fetching event details:', error);
                         alert("Could not load event details. Please try again.");
+                    });
+            });
+        });
+
+        // New logic for View Skills popup
+        skillsButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const eventId = this.dataset.eventId;
+                
+                fetch(`/events/${eventId}/skills_json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        document.getElementById('modalSkillsEventName').textContent = data.event_name;
+                        const skillsList = document.getElementById('skillsList');
+                        skillsList.innerHTML = '';
+                        if (data.skills && data.skills.length > 0) {
+                            data.skills.forEach(skill => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item';
+                                li.textContent = skill;
+                                skillsList.appendChild(li);
+                            });
+                        } else {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item';
+                            li.textContent = 'No skills required for this event.';
+                            skillsList.appendChild(li);
+                        }
+                        skillsModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching skills:', error);
+                        alert("Could not load skills. Please try again.");
                     });
             });
         });
