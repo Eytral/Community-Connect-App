@@ -14,10 +14,11 @@
         </thead>
         <tbody>
             <tr>
-                <td><a href="#" class="org-details-link" data-org-id="{{ my_org.OrganisationID }}">{{ my_org.Name }}</a></td>
+                <td>{{ my_org.Name }}</td>
                 <td>{{ my_org.Description or 'N/A' }}</td>
                 <td>
                     <a href="{{ url_for('edit_org_account') }}" class="btn btn-sm btn-primary">Edit Profile</a>
+                    <a href="{{ url_for('view_organisation', org_id=my_org.OrganisationID) }}" class="btn btn-sm btn-info">View Details</a>
                 </td>
             </tr>
         </tbody>
@@ -42,7 +43,7 @@
                 <td>{{ org.Email }}</td>
                 <td><a href="{{ org.Website }}" target="_blank">{{ org.Website or 'N/A' }}</a></td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info org-details-link" data-org-id="{{ org.OrganisationID }}">View Details</a>
+                    <a href="{{ url_for('view_organisation', org_id=org.OrganisationID) }}" class="btn btn-sm btn-info">View Details</a>
                 </td>
             </tr>
             {% else %}
@@ -72,72 +73,11 @@
                 <td>{{ org.Email }}</td>
                 <td><a href="{{ org.Website }}" target="_blank">{{ org.Website or 'N/A' }}</a></td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info org-details-link" data-org-id="{{ org.OrganisationID }}">View Details</a>
+                    <a href="{{ url_for('view_organisation', org_id=org.OrganisationID) }}" class="btn btn-sm btn-info">View Details</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 {% endif %}
-
-<div class="modal fade" id="orgModal" tabindex="-1" aria-labelledby="orgModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="orgModalLabel">Organisation Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h4 id="modalOrgName"></h4>
-                <p><strong>Description:</strong> <span id="modalOrgDescription"></span></p>
-                <p><strong>Contact Person:</strong> <span id="modalOrgContactPerson"></span></p>
-                <p><strong>Email:</strong> <span id="modalOrgEmail"></span></p>
-                <p><strong>Phone:</strong> <span id="modalOrgPhone"></span></p>
-                <p><strong>Website:</strong> <a href="#" id="modalOrgWebsite" target="_blank"></a></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const links = document.querySelectorAll('.org-details-link');
-        const modal = new bootstrap.Modal(document.getElementById('orgModal'));
-
-        links.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const orgId = this.dataset.orgId;
-                
-                fetch(`/organisations/${orgId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        document.getElementById('modalOrgName').textContent = data.Name;
-                        document.getElementById('modalOrgDescription').textContent = data.Description || 'N/A';
-                        document.getElementById('modalOrgContactPerson').textContent = data.ContactPerson || 'N/A';
-                        document.getElementById('modalOrgEmail').textContent = data.Email;
-                        document.getElementById('modalOrgPhone').textContent = data.Phone || 'N/A';
-                        
-                        const websiteLink = document.getElementById('modalOrgWebsite');
-                        websiteLink.href = data.Website || '#';
-                        websiteLink.textContent = data.Website || 'N/A';
-                        
-                        modal.show();
-                    })
-                    .catch(error => {
-                        console.error('Error fetching organisation details:', error);
-                        alert("Could not load organisation details. Please try again.");
-                    });
-            });
-        });
-    });
-</script>
 {% endblock %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+
 <h2 class="mb-4">My Events</h2>
 <table class="table table-striped">
     <thead>
@@ -13,7 +14,7 @@
     <tbody>
         {% for event in my_events %}
         <tr>
-            <td><a href="#" class="event-details-link" data-event-id="{{ event.EventID }}">{{ event.Name }}</a></td>
+            <td><a href="{{ url_for('view_event', event_id=event.EventID) }}">{{ event.Name }}</a></td>
             <td>{{ event.Date }}</td>
             <td>{{ event.Location }}</td>
             <td>
@@ -31,6 +32,8 @@
     </tbody>
 </table>
 
+---
+
 <h3 class="mt-4">Other Organisations' Events</h3>
 <table class="table table-striped">
     <thead>
@@ -44,7 +47,7 @@
     <tbody>
         {% for event in other_events %}
         <tr>
-            <td><a href="#" class="event-details-link" data-event-id="{{ event.EventID }}">{{ event.Name }}</a></td>
+            <td><a href="{{ url_for('view_event', event_id=event.EventID) }}">{{ event.Name }}</a></td>
             <td>{{ event.Date }}</td>
             <td>{{ event.OrgName }}</td>
             <td>{{ event.Location }}</td>
@@ -57,52 +60,4 @@
     </tbody>
 </table>
 
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="eventModalLabel">Event Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h4 id="modalEventName"></h4>
-                <p><strong>Organisation:</strong> <span id="modalOrgName"></span></p>
-                <p><strong>Date:</strong> <span id="modalEventDate"></span></p>
-                <p><strong>Time:</strong> <span id="modalEventTime"></span></p>
-                <p><strong>Location:</strong> <span id="modalEventLocation"></span></p>
-                <p><strong>Description:</strong> <span id="modalEventDescription"></span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const links = document.querySelectorAll('.event-details-link');
-        const modal = new bootstrap.Modal(document.getElementById('eventModal'));
-
-        links.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const eventId = this.dataset.eventId;
-                
-                fetch(`/events/${eventId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('modalEventName').textContent = data.Name;
-                        document.getElementById('modalOrgName').textContent = data.OrgName;
-                        document.getElementById('modalEventDate').textContent = data.Date;
-                        document.getElementById('modalEventTime').textContent = `${data.StartTime || ''} - ${data.EndTime || ''}`;
-                        document.getElementById('modalEventLocation').textContent = data.Location;
-                        document.getElementById('modalEventDescription').textContent = data.Description;
-                        modal.show();
-                    })
-                    .catch(error => console.error('Error fetching event details:', error));
-            });
-        });
-    });
-</script>
 {% endblock %}

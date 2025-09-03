@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="mb-3">Events</h2>
+<h2 class="mb-4">All Events</h2>
 
 {% if session.get('account_type') == 'organisation' %}
-    <h3>My Events</h3>
+    <h3 class="mt-4">My Events</h3>
     <table class="table table-striped">
         <thead>
             <tr>
                 <th>Event Name</th>
                 <th>Date</th>
                 <th>Location</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -19,16 +20,14 @@
                 <td>{{ event.Name }}</td>
                 <td>{{ event.Date }}</td>
                 <td>{{ event.Location }}</td>
+                <td><span class="badge bg-secondary">{{ event.Status }}</span></td>
                 <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
-                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
-                        <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
-                        <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
-                        <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="POST" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
-                        </form>
-                    </div>
+                    <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-sm btn-info">Details</a>
+                    <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
+                    <a href="{{ url_for('edit_event', event_id=event.EventID) }}" class="btn btn-sm btn-primary">Edit</a>
+                    <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
+                    </form>
                 </td>
             </tr>
             {% else %}
@@ -38,8 +37,9 @@
             {% endfor %}
         </tbody>
     </table>
+    <a href="{{ url_for('add_event') }}" class="btn btn-success">Create New Event</a>
 
-    <h3>Other Organisations' Events</h3>
+    <h3 class="mt-4">Other Organisations' Events</h3>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -47,6 +47,7 @@
                 <th>Date</th>
                 <th>Organisation</th>
                 <th>Location</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -57,11 +58,9 @@
                 <td>{{ event.Date }}</td>
                 <td>{{ event.OrgName }}</td>
                 <td>{{ event.Location }}</td>
+                <td><span class="badge bg-secondary">{{ event.Status }}</span></td>
                 <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
-                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
-                    </div>
+                    <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-sm btn-info">Details</a>
                 </td>
             </tr>
             {% else %}
@@ -72,8 +71,7 @@
         </tbody>
     </table>
 
-{% else %}
-    <h3>Accepted Events</h3>
+{% elif session.get('account_type') == 'volunteer' %}
     <table class="table table-striped">
         <thead>
             <tr>
@@ -81,222 +79,50 @@
                 <th>Date</th>
                 <th>Organisation</th>
                 <th>Location</th>
-                <th>Status</th>
-                <th>Action</th>
+                <th>Event Status</th>
+                <th>Your Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for event in events if event.signup_status == 'Accepted' %}
+            {% for event in events %}
             <tr>
                 <td>{{ event.Name }}</td>
                 <td>{{ event.Date }}</td>
                 <td>{{ event.OrgName }}</td>
                 <td>{{ event.Location }}</td>
-                <td><span class="badge bg-success">Accepted</span></td>
+                <td><span class="badge bg-secondary">{{ event.Status }}</span></td>
+                <td>
+                    {% if event.signup_status %}
+                        <span class="badge bg-{% if event.signup_status == 'Accepted' %}success{% elif event.signup_status == 'Rejected' %}danger{% else %}warning{% endif %}">{{ event.signup_status }}</span>
+                    {% else %}
+                        Not Signed Up
+                    {% endif %}
+                </td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
-                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
+                        <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-sm btn-info">Details</a>
+                        {% if event.signup_status %}
+                            {% if event.signup_status != 'Accepted' %}
+                                <form action="{{ url_for('retract_signup', event_id=event.EventID) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Are you sure you want to retract your signup?');">Retract Signup</button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <form action="{{ url_for('signup_for_event', event_id=event.EventID) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">Sign Up</button>
+                            </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6">No accepted events.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <h3>Pending Events</h3>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Date</th>
-                <th>Organisation</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events if event.signup_status == 'Pending' %}
-            <tr>
-                <td>{{ event.Name }}</td>
-                <td>{{ event.Date }}</td>
-                <td>{{ event.OrgName }}</td>
-                <td>{{ event.Location }}</td>
-                <td><span class="badge bg-warning">Pending</span></td>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
-                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
-                        <form action="{{ url_for('retract_signup', event_id=event.EventID) }}" method="POST" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Are you sure you want to retract your signup?');">Retract Signup</button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6">No pending events.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>Other Events</h3>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Date</th>
-                <th>Organisation</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events if not event.signup_status %}
-            <tr>
-                <td>{{ event.Name }}</td>
-                <td>{{ event.Date }}</td>
-                <td>{{ event.OrgName }}</td>
-                <td>{{ event.Location }}</td>
-                <td><span class="badge bg-secondary">Not Signed Up</span></td>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-info view-skills-btn" data-event-id="{{ event.EventID }}">View Skills</button>
-                        <a href="#" class="btn btn-sm btn-info event-details-link" data-event-id="{{ event.EventID }}">View Details</a>
-                        <form action="{{ url_for('signup_for_event', event_id=event.EventID) }}" method="POST" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-success">Sign Up</button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6">No other events to display.</td>
+                <td colspan="7">No events found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 {% endif %}
 
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="eventModalLabel">Event Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h4 id="modalEventName"></h4>
-                <p><strong>Organisation:</strong> <span id="modalOrgName"></span></p>
-                <p><strong>Date:</strong> <span id="modalEventDate"></span></p>
-                <p><strong>Time:</strong> <span id="modalEventTime"></span></p>
-                <p><strong>Location:</strong> <span id="modalEventLocation"></span></p>
-                <p><strong>Description:</strong> <span id="modalEventDescription"></span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="skillsModal" tabindex="-1" aria-labelledby="skillsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="skillsModalLabel">Required Skills</h5>
-            </div>
-            <div class="modal-body">
-                <h4 id="modalSkillsEventName"></h4>
-                <ul id="skillsList" class="list-group"></ul>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const eventDetailsLinks = document.querySelectorAll('.event-details-link');
-        const skillsButtons = document.querySelectorAll('.view-skills-btn');
-
-        const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
-        const skillsModal = new bootstrap.Modal(document.getElementById('skillsModal'));
-
-        eventDetailsLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const eventId = this.dataset.eventId;
-                
-                fetch(`/events/${eventId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        document.getElementById('modalEventName').textContent = data.Name;
-                        document.getElementById('modalOrgName').textContent = data.OrgName;
-                        document.getElementById('modalEventDate').textContent = data.Date;
-                        document.getElementById('modalEventTime').textContent = `${data.StartTime || 'N/A'} - ${data.EndTime || 'N/A'}`;
-                        document.getElementById('modalEventLocation').textContent = data.Location;
-                        document.getElementById('modalEventDescription').textContent = data.Description;
-                        eventModal.show();
-                    })
-                    .catch(error => {
-                        console.error('Error fetching event details:', error);
-                        alert("Could not load event details. Please try again.");
-                    });
-            });
-        });
-
-        // New logic for View Skills popup
-        skillsButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const eventId = this.dataset.eventId;
-                
-                fetch(`/events/${eventId}/skills_json`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        document.getElementById('modalSkillsEventName').textContent = data.event_name;
-                        const skillsList = document.getElementById('skillsList');
-                        skillsList.innerHTML = '';
-                        if (data.skills && data.skills.length > 0) {
-                            data.skills.forEach(skill => {
-                                const li = document.createElement('li');
-                                li.className = 'list-group-item';
-                                li.textContent = skill;
-                                skillsList.appendChild(li);
-                            });
-                        } else {
-                            const li = document.createElement('li');
-                            li.className = 'list-group-item';
-                            li.textContent = 'No skills required for this event.';
-                            skillsList.appendChild(li);
-                        }
-                        skillsModal.show();
-                    })
-                    .catch(error => {
-                        console.error('Error fetching skills:', error);
-                        alert("Could not load skills. Please try again.");
-                    });
-            });
-        });
-    });
-</script>
 {% endblock %}

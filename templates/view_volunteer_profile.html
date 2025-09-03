@@ -7,6 +7,11 @@
         <p><strong>Email:</strong> {{ volunteer.Email }}</p>
         <p><strong>Phone:</strong> {{ volunteer.Phone or 'N/A' }}</p>
         <p><strong>Address:</strong> {{ volunteer.Address or 'N/A' }}</p>
+        <p><strong>Address:</strong> {{ volunteer.EmergencyContact or 'N/A' }}</p>
+        <p><strong>DateOfBirth:</strong> {{ volunteer.DateOfBirth or 'N/A' }} (age: {{ volunteer.Age or 'N/A'}})</p>
+
+
+
         
         <div class="form-group form-check">
             <input type="checkbox" class="form-check-input" id="availability_display" disabled {% if volunteer.Availability %}checked{% endif %}>
@@ -28,4 +33,8 @@
         {% endif %}
     </div>
 </div>
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+<a href="{{ url_for('list_volunteers') }}" class="btn btn-secondary mt-3">Back to Volunteers</a>
+
 {% endblock %}

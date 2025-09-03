@@ -26,6 +26,158 @@
         <label for="end_time">End Time</label>
         <input type="time" class="form-control" id="end_time" name="end_time" value="{{ event.EndTime }}">
     </div>
-    <button type="submit" class="btn btn-primary">Update Event</button>
+
+    <div class="form-group">
+        <label for="status">Event Status</label>
+        <select class="form-select" id="status" name="status" required>
+            <option value="Open" {% if event.Status == 'Open' %}selected{% endif %}>Open</option>
+            <option value="Closed" {% if event.Status == 'Closed' %}selected{% endif %}>Closed</option>
+            <option value="Planned" {% if event.Status == 'Planned' %}selected{% endif %}>Planned</option>
+        </select>
+    </div>
+
+    <div class="form-group mt-3">
+        <label>Required Skills</label>
+        
+        <ul id="required-skills-list" class="list-group mb-3">
+            {% if event_skills_with_names %}
+                {% for skill in event_skills_with_names %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-skill-id="{{ skill.SkillID }}">
+                        {{ skill.Name }}
+                        <button type="button" class="btn btn-sm btn-danger remove-skill-btn">Remove</button>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No skills currently required for this event.</p>
+            {% endif %}
+        </ul>
+    
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select" id="skill-select">
+                <option selected disabled>Select a skill to add</option>
+                {% for skill in all_skills %}
+                    {% if skill.SkillID not in event_skill_ids %}
+                        <option value="{{ skill.SkillID }}">{{ skill.Name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary" id="add-skill-btn">Add</button>
+        </div>
+        
+        <div id="hidden-inputs-container">
+            {% for skill in event_skills_with_names %}
+                <input type="hidden" name="skills" value="{{ skill.SkillID }}" data-skill-id="{{ skill.SkillID }}">
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div id="time-error-message" class="alert alert-danger d-none mt-3" role="alert">
+        The end time must be after the start time.
+    </div>
+    
+    <button type="submit" class="btn btn-primary mt-4">Update Event</button>
 </form>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const timeErrorMessage = document.getElementById('time-error-message');
+        const skillsSelect = document.getElementById('skill-select');
+        const addSkillBtn = document.getElementById('add-skill-btn');
+        const requiredSkillsList = document.getElementById('required-skills-list');
+        const hiddenInputsContainer = document.getElementById('hidden-inputs-container');
+        const skillIdToName = {};
+        {% for skill in all_skills %}
+            skillIdToName['{{ skill.SkillID }}'] = '{{ skill.Name }}';
+        {% endfor %}
+
+        // Function to handle adding a new skill (unchanged)
+        function addSkill(id, name) {
+            if (document.querySelector(`input[data-skill-id="${id}"]`)) {
+                return;
+            }
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.dataset.skillId = id;
+            
+            const skillInfoSpan = document.createElement('span');
+            skillInfoSpan.textContent = name;
+            
+            const unsavedLabel = document.createElement('span');
+            unsavedLabel.className = 'badge bg-warning ms-2';
+            unsavedLabel.textContent = 'Unsaved';
+            skillInfoSpan.appendChild(unsavedLabel);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn btn-sm btn-danger remove-skill-btn';
+            removeBtn.textContent = 'Remove';
+            
+            li.appendChild(skillInfoSpan);
+            li.appendChild(removeBtn);
+            requiredSkillsList.appendChild(li);
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'skills';
+            hiddenInput.value = id;
+            hiddenInput.dataset.skillId = id;
+            hiddenInputsContainer.appendChild(hiddenInput);
+
+            const addedOption = skillsSelect.querySelector(`option[value="${id}"]`);
+            if (addedOption) {
+                addedOption.remove();
+            }
+        }
+        
+        // Event listener for adding a new skill from the dropdown (unchanged)
+        addSkillBtn.addEventListener('click', function() {
+            const selectedOption = skillsSelect.options[skillsSelect.selectedIndex];
+            if (selectedOption.value) {
+                addSkill(selectedOption.value, selectedOption.textContent);
+            }
+        });
+
+        // Event listener for removing skills from the combined list (unchanged)
+        requiredSkillsList.addEventListener('click', function(event) {
+            if (event.target.classList.contains('remove-skill-btn')) {
+                const li = event.target.closest('li');
+                const skillId = li.dataset.skillId;
+                
+                const skillName = skillIdToName[skillId];
+                
+                li.remove();
+                
+                const hiddenInput = hiddenInputsContainer.querySelector(`input[data-skill-id="${skillId}"]`);
+                if (hiddenInput) {
+                    hiddenInput.remove();
+                }
+                
+                const option = document.createElement('option');
+                option.value = skillId;
+                option.textContent = skillName;
+                skillsSelect.appendChild(option);
+            }
+        });
+
+        // Event listener for form submission
+        form.addEventListener('submit', function(event) {
+            // Get the time values
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+
+            // Only perform the check if both fields have values
+            if (startTime && endTime) {
+                // If the end time is not after the start time, prevent submission
+                if (endTime <= startTime) {
+                    event.preventDefault(); // Stop the form from submitting
+                    timeErrorMessage.classList.remove('d-none'); // Show the error message
+                } else {
+                    timeErrorMessage.classList.add('d-none'); // Hide the error message
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -63,6 +63,7 @@ CREATE TABLE Events (
     Location TEXT,
     Status TEXT,
     FOREIGN KEY (OrganisationID) REFERENCES Organisations(OrganisationID)
+    CONSTRAINT chk_end_after_start CHECK (end_time > start_time)
 );
 
 -- VolunteerSkills (Many-to-Many Volunteers <> Skills)

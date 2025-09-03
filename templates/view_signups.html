@@ -11,7 +11,6 @@
         <p><strong>Location:</strong> {{ event.Location }}</p>
     </div>
 </div>
-
 <h3 class="mt-4">Volunteer Signups</h3>
 {% if signups %}
 <table class="table table-striped">
@@ -20,8 +19,9 @@
             <th>Volunteer</th>
             <th>Email</th>
             <th>Phone</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Current Status</th>
+            <th>Current Role</th>
+            <th>Update</th>
         </tr>
     </thead>
     <tbody>
@@ -32,19 +32,59 @@
             <td>{{ signup.Phone or 'N/A' }}</td>
             <td><span class="badge bg-{% if signup.Status == 'Accepted' %}success{% elif signup.Status == 'Rejected' %}danger{% else %}warning{% endif %}">{{ signup.Status }}</span></td>
             <td>
-                <form action="{{ url_for('update_signup_status', signup_id=signup.SignupID) }}" method="POST" class="d-inline">
-                    <input type="hidden" name="status" value="Accepted">
-                    <button type="submit" class="btn btn-sm btn-success">Accept</button>
-                </form>
-                <form action="{{ url_for('update_signup_status', signup_id=signup.SignupID) }}" method="POST" class="d-inline">
-                    <input type="hidden" name="status" value="Rejected">
-                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                {% if signup.RoleName %}
+                    <span>{{ signup.RoleName }}</span>
+                    {% if signup.RoleDescription %}
+                        <p class="text-muted"><small>{{ signup.RoleDescription }}</small></p>
+                    {% endif %}
+                {% else %}
+                    <span>No Role Assigned</span>
+                {% endif %}
+            </td>
+            <td>
+                <form action="{{ url_for('update_signup_status_and_role', signup_id=signup.SignupID) }}" method="POST">
+                    <div class="input-group input-group-sm mb-1">
+                        <select class="form-select form-select-sm" name="status" aria-label="Status">
+                            <option value="Accepted" {% if signup.Status == 'Accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="Pending" {% if signup.Status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Rejected" {% if signup.Status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                    <div class="input-group input-group-sm mb-1">
+                        <select class="form-select form-select-sm" name="role_id">
+                            <option value="">No Role</option>
+                            {% for role in roles %}
+                                <option value="{{ role.RoleID }}" {% if signup.RoleID == role.RoleID %}selected{% endif %}>{{ role.Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">Update</button>
                 </form>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Create a New Role</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('create_new_role') }}" method="POST">
+            <div class="mb-3">
+                <label for="roleName" class="form-label">Role Name</label>
+                <input type="text" class="form-control" id="roleName" name="roleName" required>
+            </div>
+            <div class="mb-3">
+                <label for="roleDescription" class="form-label">Role Description</label>
+                <textarea class="form-control" id="roleDescription" name="roleDescription" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Role</button>
+        </form>
+    </div>
+</div>
+
 {% else %}
 <p>No volunteers have signed up for this event yet.</p>
 {% endif %}

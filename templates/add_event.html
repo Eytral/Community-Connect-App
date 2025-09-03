@@ -26,6 +26,139 @@
         <label for="end_time">End Time</label>
         <input type="time" class="form-control" id="end_time" name="end_time">
     </div>
-    <button type="submit" class="btn btn-primary">Create Event</button>
+
+    <div class="form-group">
+        <label for="status">Event Status</label>
+        <select class="form-select" id="status" name="status" required>
+            <option value="Open" selected>Open</option>
+            <option value="Planned">Closed</option>
+            <option value="Canceled">Closed</option>
+        </select>
+    </div>
+
+    <div class="form-group mt-3">
+        <label>Required Skills</label>
+        
+        <ul id="required-skills-list" class="list-group mb-3">
+            <p class="text-muted">No skills currently selected for this event.</p>
+        </ul>
+    
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select" id="skill-select">
+                <option selected disabled>Select a skill to add</option>
+                {% for skill in all_skills %}
+                    <option value="{{ skill.SkillID }}">{{ skill.Name }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary" id="add-skill-btn">Add</button>
+        </div>
+        
+        <div id="hidden-inputs-container">
+        </div>
+    </div>
+    
+    <div id="time-error-message" class="alert alert-danger d-none mt-3" role="alert">
+        The end time must be after the start time.
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-4">Create Event</button>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const timeErrorMessage = document.getElementById('time-error-message');
+        const skillsSelect = document.getElementById('skill-select');
+        const addSkillBtn = document.getElementById('add-skill-btn');
+        const requiredSkillsList = document.getElementById('required-skills-list');
+        const hiddenInputsContainer = document.getElementById('hidden-inputs-container');
+        
+        function addSkill(id, name) {
+            if (document.querySelector(`input[data-skill-id="${id}"]`)) {
+                return;
+            }
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.dataset.skillId = id;
+            li.innerHTML = `
+                <span>
+                    ${name}
+                    <span class="badge bg-success ms-2">Selected</span>
+                </span>
+                <button type="button" class="btn btn-sm btn-danger remove-skill-btn">Remove</button>
+            `;
+            
+            const noSkillsText = requiredSkillsList.querySelector('p');
+            if (noSkillsText) {
+                noSkillsText.remove();
+            }
+
+            requiredSkillsList.appendChild(li);
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'skills';
+            hiddenInput.value = id;
+            hiddenInput.dataset.skillId = id;
+            hiddenInputsContainer.appendChild(hiddenInput);
+
+            const addedOption = skillsSelect.querySelector(`option[value="${id}"]`);
+            if (addedOption) {
+                addedOption.remove();
+            }
+        }
+        
+        addSkillBtn.addEventListener('click', function() {
+            const selectedOption = skillsSelect.options[skillsSelect.selectedIndex];
+            if (selectedOption.value) {
+                addSkill(selectedOption.value, selectedOption.textContent);
+            }
+        });
+
+        requiredSkillsList.addEventListener('click', function(event) {
+            if (event.target.classList.contains('remove-skill-btn')) {
+                const li = event.target.closest('li');
+                const skillId = li.dataset.skillId;
+                const skillName = li.querySelector('span').firstChild.textContent.trim();
+                
+                li.remove();
+                
+                const hiddenInput = hiddenInputsContainer.querySelector(`input[data-skill-id="${skillId}"]`);
+                if (hiddenInput) {
+                    hiddenInput.remove();
+                }
+
+                if (requiredSkillsList.children.length === 0) {
+                    const noSkillsText = document.createElement('p');
+                    noSkillsText.className = 'text-muted';
+                    noSkillsText.textContent = 'No skills currently selected for this event.';
+                    requiredSkillsList.appendChild(noSkillsText);
+                }
+                
+                const option = document.createElement('option');
+                option.value = skillId;
+                option.textContent = skillName;
+                skillsSelect.appendChild(option);
+            }
+        });
+
+        // Event listener for form submission
+        form.addEventListener('submit', function(event) {
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            
+            if (startTime && endTime) {
+                if (endTime <= startTime) {
+                    event.preventDefault();
+                    timeErrorMessage.classList.remove('d-none');
+                } else {
+                    timeErrorMessage.classList.add('d-none');
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

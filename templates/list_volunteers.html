@@ -14,6 +14,7 @@
         <tr>
             <th>Name</th>
             <th>Email</th>
+            <th>Age</th>
             <th>Phone</th>
             <th>Availability</th>
             <th>Skills</th>
@@ -23,8 +24,9 @@
     <tbody>
         {% for volunteer in volunteers %}
         <tr>
-            <td>{{ volunteer.FirstName }} {{ volunteer.LastName }}</td>
+            <td>{{ volunteer.Fullname }}</td>
             <td>{{ volunteer.Email }}</td>
+            <td>{{ volunteer.Age }}</td>
             <td>{{ volunteer.Phone or 'N/A' }}</td>
             <td>
                 {% if volunteer.Availability %}

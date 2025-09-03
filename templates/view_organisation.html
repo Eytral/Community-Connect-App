@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">{{ org.Name }}</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Details</h5>
+            <p><strong>Description:</strong> {{ org.Description or 'N/A' }}</p>
+            <p><strong>Contact Person:</strong> {{ org.ContactPerson or 'N/A' }}</p>
+            <p><strong>Email:</strong> {{ org.Email or 'N/A' }}</p>
+            <p><strong>Phone:</strong> {{ org.Phone or 'N/A' }}</p>
+            <p><strong>Address:</strong> {{ org.Address or 'N/A' }}</p>
+            <p><strong>Website:</strong> <a href="{{ org.Website }}" target="_blank">{{ org.Website or 'N/A' }}</a></p>
+            <a href="{{ url_for('list_orgs') }}" class="btn btn-secondary mt-3">Back to All Organisations</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
