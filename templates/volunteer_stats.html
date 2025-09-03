@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Skill Counts</h2>
+{% for skill in skillcount %}
+<p>{{skill.Name}}: {{ skill.SkillCount }}</p>
+{% endfor %}
+
+<a href="{{ url_for('list_volunteers') }}" class="btn btn-secondary mt-3">Back to Volunteers</a>
+{% endblock %}

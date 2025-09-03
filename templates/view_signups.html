@@ -88,4 +88,9 @@
 {% else %}
 <p>No volunteers have signed up for this event yet.</p>
 {% endif %}
+
+<div class="d-flex gap-2 mt-3">
+    <a href="{{ url_for('list_events') }}" class="btn btn-secondary">Back to All Events</a>
+    <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-info">View Event Details</a>
+</div>
 {% endblock %}

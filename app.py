@@ -377,6 +377,11 @@ def view_volunteer_profile(volunteer_id):
             END) AS Age FROM Volunteers WHERE VolunteerID = ?""",
         (volunteer_id,)
     ).fetchone()
+    eventsparticipated = db.execute(
+        """SELECT COUNT(*) AS EventsParticipated
+           FROM Signups sup
+           WHERE sup.VolunteerID = ?""",
+           (volunteer_id,)).fetchone()
     if not volunteer:
         flash("Volunteer not found.", "error")
         return redirect(url_for("list_volunteers"))
@@ -388,7 +393,7 @@ def view_volunteer_profile(volunteer_id):
         (volunteer_id,)
     ).fetchall()
 
-    return render_template("view_volunteer_profile.html", volunteer=volunteer, skills=skills)
+    return render_template("view_volunteer_profile.html", volunteer=volunteer, eventsparticipated=eventsparticipated, skills=skills)
 
 # ---------- Organisation-Specific Routes ----------
 
@@ -713,7 +718,6 @@ def retract_signup(event_id):
     
     return redirect(url_for('list_events'))
 
-
 @app.route("/events/<int:event_id>")
 @login_required
 def view_event(event_id):
@@ -735,27 +739,43 @@ def view_event(event_id):
         flash("Event not found.", "error")
         return redirect(url_for('index'))
 
-    # Fetch skills associated with the event
-    skills = db.execute(
-        """SELECT s.Name, s.Description
-           FROM EventSkills es
-           JOIN Skills s ON es.SkillID = s.SkillID
-           WHERE es.EventID = ?""",
-        (event_id,))
-    
+    # Fetch skills associated with the event and check their filled status
+    # This query uses a LEFT JOIN to ensure all skills are returned,
+    # even if no volunteers have signed up for them.
+    skills_data = db.execute(
+        """SELECT 
+            s.Name, 
+            s.Description,
+            COUNT(vs.VolunteerID) AS FilledCount
+        FROM EventSkills es
+        JOIN Skills s ON es.SkillID = s.SkillID
+        LEFT JOIN Signups sup ON es.EventID = sup.EventID AND sup.Status = 'Accepted'
+        LEFT JOIN VolunteerSkills vs ON sup.VolunteerID = vs.VolunteerID AND vs.SkillID = es.SkillID
+        WHERE es.EventID = ?
+        GROUP BY s.SkillID, s.Name, s.Description""",
+        (event_id,)
+    ).fetchall()
+
     requiredskillcount = db.execute(
         """SELECT COUNT(DISTINCT es.SkillID) AS RequiredSkillCount
            FROM EventSkills es
            JOIN Signups s ON s.EventID = es.EventID
            JOIN VolunteerSkills vs ON vs.VolunteerID = s.VolunteerID AND vs.SkillID = es.SkillID
-           WHERE es.EventID = ?""",
-           (event_id,)).fetchone()
+           WHERE es.EventID = ? AND s.status = 'Accepted'""",
+        (event_id,)).fetchone()
     
     eventskillcount = db.execute(
     """SELECT COUNT(*) AS EventSkillCount
        FROM EventSkills
        WHERE EventID = ?""",
        (event_id,)).fetchone()
+    
+    volunteercount = db.execute(
+        """SELECT COUNT(*) AS VolunteerCount
+           FROM Signups sup
+           WHERE sup.EventID = ?
+            """,
+    (event_id,)).fetchone()
 
     
 
@@ -780,12 +800,13 @@ def view_event(event_id):
     return render_template(
         "view_event.html",
         event=event,
-        skills=skills,
+        skills_data=skills_data,
         signup=signup,
         role=role,
         account_type=session.get("account_type"),
         requiredskillcount=requiredskillcount,
-        eventskillcount=eventskillcount
+        eventskillcount=eventskillcount,
+        volunteercount=volunteercount
     )
 
 
@@ -897,6 +918,20 @@ def list_volunteers():
     volunteers = db.execute(query, params).fetchall()
 
     return render_template("list_volunteers.html", volunteers=volunteers, query=search_query)
+
+@app.route("/volunteers/stats", methods=["GET", "POST"])
+@login_required
+def volunteer_stats():
+    db = get_db()
+
+    skillcount = db.execute(
+        """SELECT s.Name, COUNT(*) AS SkillCount
+           FROM Volunteers v 
+           JOIN VolunteerSkills vs ON v.VolunteerID = vs.VolunteerID
+           JOIN Skills s ON vs.SkillID = s.SkillID
+           GROUP BY vs.SkillID""").fetchall()
+    
+    return render_template("volunteer_stats.html", skillcount=skillcount)
 
 # ---------- Event Routes ----------
 @app.route("/events/<int:event_id>/edit", methods=["GET", "POST"])

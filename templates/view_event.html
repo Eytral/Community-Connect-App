@@ -23,16 +23,27 @@
             </div>
 
             <h4 class="mt-4">Required Skills:</h4>
-            {% if skills %}
+            {% if skills_data %}
                 <ul class="list-group list-group-flush mb-4">
-                    {% for skill in skills %}
-                        <li class="list-group-item">{{ skill.Name }} - {{ skill.Description }}</li>
+                    {% for skill in skills_data %}
+                        {% set skill_class = 'text-success' if skill.FilledCount > 0 else 'text-danger' %}
+                        <li class="list-group-item">
+                            <span class="{{ skill_class }}">
+                                {{ skill.Name }} - {{ skill.Description }}
+                                {% if skill.FilledCount > 0 %}
+                                    (Filled)
+                                {% else %}
+                                    (Not Filled)
+                                {% endif %}
+                            </span>
+                        </li>
                     {% endfor %}
                 </ul>
             {% else %}
                 <p>No specific skills are required for this event.</p>
             {% endif %}
             <p>Skills Filled: {{ requiredskillcount.RequiredSkillCount }} / {{ eventskillcount.eventskillcount }}</p>
+            <p>Volunteers: {{ volunteercount.volunteercount }}</p>
 
             {% if account_type == 'volunteer' %}
                 <hr>
@@ -58,6 +69,9 @@
     <div class="d-flex gap-2 mt-3">
         <a href="{{ url_for(session.account_type + '_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
         <a href="{{ url_for('list_events') }}" class="btn btn-secondary">Back to All Events</a>
+        {% if account_type == 'organisation' %}
+        <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

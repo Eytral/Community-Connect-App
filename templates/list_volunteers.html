@@ -2,6 +2,7 @@
 {% block content %}
 <h2 class="mb-4">All Volunteers</h2>
 
+<!-- Search form -->
 <form method="GET" action="{{ url_for('list_volunteers') }}" class="mb-4">
     <div class="input-group">
         <input type="text" name="q" class="form-control" placeholder="Search by skill (e.g., 'First Aid', 'Gardening')" value="{{ query }}">
@@ -9,6 +10,12 @@
     </div>
 </form>
 
+<!-- Button to volunteer stats page -->
+<div class="mb-3">
+    <a href="{{ url_for('volunteer_stats') }}" class="btn btn-primary">View Volunteer Stats</a>
+</div>
+
+<!-- Volunteers table -->
 <table class="table table-striped">
     <thead>
         <tr>
@@ -50,7 +57,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="6">No volunteers found matching your search.</td>
+            <td colspan="7">No volunteers found matching your search.</td>
         </tr>
         {% endfor %}
     </tbody>
