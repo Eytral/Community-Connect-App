@@ -11,65 +11,65 @@ DROP TABLE IF EXISTS Skills;
 -- Organisations Table
 CREATE TABLE Organisations (
     OrganisationID INTEGER PRIMARY KEY AUTOINCREMENT,
-    Name TEXT NOT NULL,
-    Description TEXT,
-    ContactPerson TEXT,
-    Email TEXT UNIQUE,
-    Password TEXT,
-    Phone TEXT,
-    Address TEXT,
-    Website TEXT,
-    Logo TEXT
+    Name TEXT(100) NOT NULL,
+    Description TEXT(255),
+    ContactPerson TEXT(50),
+    Email TEXT(320) UNIQUE NOT NULL,
+    Password TEXT(128) NOT NULL,
+    Phone TEXT(32),
+    Address TEXT(255),
+    Website TEXT(255),
+    Logo BLOB
 );
 
 -- Volunteers Table
 CREATE TABLE Volunteers (
     VolunteerID INTEGER PRIMARY KEY AUTOINCREMENT,
-    FirstName TEXT NOT NULL,
-    LastName TEXT NOT NULL,
-    Email TEXT UNIQUE,
-    Password TEXT,
-    Phone TEXT,
-    Address TEXT,
+    FirstName TEXT(20) NOT NULL,
+    LastName TEXT(20) NOT NULL,
+    Email TEXT(320) UNIQUE NOT NULL,
+    Password TEXT(128) NOT NULL,
+    Phone TEXT(32),
+    Address TEXT(255),
     DateOfBirth DATE,
     Availability BOOLEAN,
-    ProfilePhoto TEXT,
-    EmergencyContact TEXT
+    ProfilePhoto BLOB,
+    EmergencyContact TEXT(32)
 );
 
 -- Roles Table
 CREATE TABLE Roles (
     RoleID INTEGER PRIMARY KEY AUTOINCREMENT,
-    Name TEXT NOT NULL,
-    Description TEXT
+    Name TEXT(50) NOT NULL,
+    Description TEXT(255)
 );
 
 -- Skills Table
 CREATE TABLE Skills (
     SkillID INTEGER PRIMARY KEY AUTOINCREMENT,
-    Name TEXT NOT NULL,
-    Description TEXT
+    Name TEXT(50) NOT NULL,
+    Description TEXT(255)
 );
 
 -- Events Table
 CREATE TABLE Events (
     EventID INTEGER PRIMARY KEY AUTOINCREMENT,
-    OrganisationID INTEGER,
-    Name TEXT NOT NULL,
-    Description TEXT,
+    OrganisationID INTEGER NOT NULL,
+    Name TEXT(100) NOT NULL,
+    Description TEXT(255),
     Date DATE,
     StartTime TIME,
     EndTime TIME,
-    Location TEXT,
-    Status TEXT,
-    FOREIGN KEY (OrganisationID) REFERENCES Organisations(OrganisationID)
-    CONSTRAINT chk_end_after_start CHECK (end_time > start_time)
+    Location TEXT(255),
+    Status TEXT(20),
+    FOREIGN KEY (OrganisationID) REFERENCES Organisations(OrganisationID),
+    CONSTRAINT chk_end_after_start CHECK (EndTime > StartTime)
 );
 
 -- VolunteerSkills (Many-to-Many Volunteers <> Skills)
 CREATE TABLE VolunteerSkills (
-    VolunteerID INTEGER,
-    SkillID INTEGER,
+    VolunteerID INTEGER NOT NULL,
+    SkillID INTEGER NOT NULL,
     PRIMARY KEY (VolunteerID, SkillID),
     FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
     FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
@@ -77,8 +77,8 @@ CREATE TABLE VolunteerSkills (
 
 -- EventSkills (Many-to-Many Events <> Skills)
 CREATE TABLE EventSkills (
-    EventID INTEGER,
-    SkillID INTEGER,
+    EventID INTEGER NOT NULL,
+    SkillID INTEGER NOT NULL,
     PRIMARY KEY (EventID, SkillID),
     FOREIGN KEY (EventID) REFERENCES Events(EventID) ON DELETE CASCADE,
     FOREIGN KEY (SkillID) REFERENCES Skills(SkillID) ON DELETE CASCADE
@@ -87,11 +87,11 @@ CREATE TABLE EventSkills (
 -- Signups Table (Many-to-Many Volunteers <> Events with Roles)
 CREATE TABLE Signups (
     SignupID INTEGER PRIMARY KEY AUTOINCREMENT,
-    EventID INTEGER,
-    VolunteerID INTEGER,
+    EventID INTEGER NOT NULL,
+    VolunteerID INTEGER NOT NULL,
     RoleID INTEGER,
-    Status TEXT,
+    Status TEXT(20),
     FOREIGN KEY (EventID) REFERENCES Events(EventID) ON DELETE CASCADE,
     FOREIGN KEY (VolunteerID) REFERENCES Volunteers(VolunteerID) ON DELETE CASCADE,
-    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID) ON DELETE CASCADE
+    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID) ON DELETE SET NULL
 );

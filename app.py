@@ -558,32 +558,6 @@ def update_signup_status_and_role(signup_id):
     flash("Volunteer signup status and role updated successfully.", "success")
     return redirect(url_for('view_event_signups', event_id=event["EventID"]))
 
-'''
-@app.route("/signups/<int:signup_id>/status", methods=["POST"])
-@login_required
-@org_required
-def update_signup_status(signup_id):
-    db = get_db()
-    new_status = request.form.get("status")
-
-    # Verify that the signup belongs to an event of the logged-in organisation
-    signup = db.execute(
-        """SELECT s.SignupID, s.EventID, e.OrganisationID  -- <-- ADDED s.EventID HERE
-           FROM Signups s
-           JOIN Events e ON s.EventID = e.EventID
-           WHERE s.SignupID = ?""",
-        (signup_id,)
-    ).fetchone()
-
-    if not signup or signup["OrganisationID"] != session["user_id"]:
-        flash("Not authorised to change this signup's status.", "error")
-        return redirect(url_for("organisation_dashboard"))
-
-    db.execute("UPDATE Signups SET Status = ? WHERE SignupID = ?", (new_status, signup_id))
-    db.commit()
-    flash(f"Signup status updated to '{new_status}'.", "success")
-    return redirect(url_for("view_event_signups", event_id=signup["EventID"]))
-'''
 # ---------- General Routes (Accessible to both Volunteers and Orgs) ----------
 @app.route("/events")
 @login_required
@@ -994,6 +968,7 @@ def edit_event(event_id):
 @app.route("/events/add", methods=["GET", "POST"])
 @login_required
 @org_required
+
 def add_event():
     db = get_db()
     all_skills = db.execute("SELECT * FROM Skills ORDER BY Name").fetchall()
