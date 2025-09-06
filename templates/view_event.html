@@ -71,7 +71,9 @@
         <a href="{{ url_for(session.account_type + '_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
         <a href="{{ url_for('list_events') }}" class="btn btn-secondary">Back to All Events</a>
         {% if account_type == 'organisation' %}
-        <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
+            {% if event.OrganisationID == UserID %}
+                <a href="{{ url_for('view_event_signups', event_id=event.EventID) }}" class="btn btn-sm btn-success">View Signups</a>
+            {% endif %}
         {% endif %}
     </div>
 </div>

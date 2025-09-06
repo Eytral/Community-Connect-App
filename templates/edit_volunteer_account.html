@@ -39,6 +39,24 @@
         <label for="emergency_contact">Emergency Contact</label>
         <input type="text" class="form-control" id="emergency_contact" name="emergency_contact" value="{{ volunteer.EmergencyContact }}">
     </div>
+
+
+    <h4 class="mt-4">Change Password</h4>
+    <div class="form-group">
+        <label for="current_password">Current Password</label>
+        <input type="password" class="form-control" id="current_password" name="current_password">
+        <small class="form-text text-muted">Leave blank to keep your current password.</small>
+    </div>
+    <div class="form-group">
+        <label for="new_password">New Password</label>
+        <input type="password" class="form-control" id="new_password" name="new_password">
+    </div>
+    <div class="form-group">
+        <label for="confirm_password">Confirm New Password</label>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+    </div>
+
+
     <button type="submit" class="btn btn-primary">Update Account</button>
 </form>
 {% endblock %}

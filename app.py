@@ -369,6 +369,32 @@ def edit_org_account():
 
     return render_template("edit_org_account.html", org=org)
 
+
+@app.route("/create_new_role", methods=["POST"])
+@login_required
+@org_required
+def create_new_role():
+    db = get_db()
+    role_name = request.form.get("roleName")
+    role_description = request.form.get("roleDescription")
+
+    if not role_name:
+        flash("Role name is required!", "error")
+        return redirect(url_for('list_events')) # or redirect to a more appropriate page
+
+    try:
+        db.execute("INSERT INTO Roles (Name, Description) VALUES (?, ?)", (role_name, role_description))
+        db.commit()
+        flash(f"New role '{role_name}' created successfully!", "success")
+    except sqlite3.IntegrityError:
+        flash(f"A role with the name '{role_name}' already exists.", "error")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "error")
+
+    # This redirection will need to be made dynamic if used on other event pages
+    return redirect(url_for('list_events'))
+
+
 @app.route("/events/<int:event_id>/signups")
 @login_required
 @org_required
@@ -495,7 +521,7 @@ def view_event(event_id):
         signup = db.execute("SELECT Status FROM Signups s WHERE VolunteerID = ? AND EventID = ?", (session["user_id"], event_id)).fetchone()
         role = db.execute("SELECT r.* FROM Signups s JOIN Roles r ON r.RoleID = s.RoleID WHERE VolunteerID = ? AND EventID = ?", (session["user_id"], event_id)).fetchone()
     
-    return render_template("view_event.html", event=event, skills_data=skills_data, signup=signup, role=role, account_type=session.get("account_type"), requiredskillcount=required_skill_count, eventskillcount=event_skill_count, volunteercount=volunteer_count)
+    return render_template("view_event.html", event=event, skills_data=skills_data, signup=signup, role=role, account_type=session.get("account_type"), requiredskillcount=required_skill_count, eventskillcount=event_skill_count, volunteercount=volunteer_count, UserID=session.get("user_id"))
 
 @app.route("/events/<int:event_id>/signup", methods=["POST"])
 @login_required
